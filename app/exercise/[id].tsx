@@ -25,7 +25,7 @@ import { MUSCLE_GROUP_LABELS } from '../../src/constants/exercises';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { toDisplayWeightNumber } from '../../src/constants/units';
 import { format } from 'date-fns';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const CHART_WIDTH = Dimensions.get('window').width - Spacing.base * 4;
 const CHART_HEIGHT = 80;

@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions, CameraType } from 'expo-camera';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase } from '../../src/db';
