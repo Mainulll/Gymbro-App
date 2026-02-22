@@ -52,7 +52,8 @@
           "savePhotosPermission": "GymBro saves exercise videos to your photo library",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

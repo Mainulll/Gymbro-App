@@ -4,6 +4,7 @@ import { getDatabase } from '../db';
 import { createWorkoutSession, updateWorkoutSession } from '../db/queries/workouts';
 import { createWorkoutExercise, deleteWorkoutExercise } from '../db/queries/workouts';
 import { createWorkoutSet, updateWorkoutSet, deleteWorkoutSet } from '../db/queries/sets';
+import { generateId } from '../utils/uuid';
 
 interface WorkoutStore {
   activeWorkout: ActiveWorkout | null;
@@ -27,7 +28,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   activeWorkout: null,
 
   startWorkout: async (name: string) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     const now = new Date();
     const db = await getDatabase();
 
@@ -58,7 +59,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     const state = get();
     if (!state.activeWorkout) throw new Error('No active workout');
 
-    const id = crypto.randomUUID();
+    const id = generateId();
     const orderIndex = state.activeWorkout.exercises.length;
     const db = await getDatabase();
 
@@ -100,7 +101,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
 
     const lastSet = exercise.sets[exercise.sets.length - 1];
     const setNumber = exercise.sets.length + 1;
-    const id = crypto.randomUUID();
+    const id = generateId();
 
     const newSet: ActiveSet = {
       id,

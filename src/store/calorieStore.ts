@@ -9,6 +9,7 @@ import {
   updateCalorieEntry,
 } from '../db/queries/calories';
 import { formatDateISO } from '../utils/date';
+import { generateId } from '../utils/uuid';
 
 interface CalorieStore {
   currentDate: string;
@@ -52,7 +53,7 @@ export const useCalorieStore = create<CalorieStore>((set, get) => ({
     const db = await getDatabase();
     const newEntry: CalorieEntry = {
       ...entry,
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: new Date().toISOString(),
     };
     await createCalorieEntry(db, newEntry);

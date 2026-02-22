@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getDatabase } from '../../src/db';
 import { createExerciseVideo } from '../../src/db/queries/videos';
 import { useWorkoutStore } from '../../src/store/workoutStore';
+import { generateId } from '../../src/utils/uuid';
 import { Colors, Spacing, Typography, Radius } from '../../src/constants/theme';
 
 const MAX_DURATION = 60000; // 60 seconds
@@ -124,7 +125,7 @@ export default function RecordScreen() {
       const fileInfo = await FileSystem.getInfoAsync(destUri);
       const sizeBytes = fileInfo.exists && 'size' in fileInfo ? (fileInfo.size ?? 0) : 0;
 
-      const videoId = crypto.randomUUID();
+      const videoId = generateId();
       const db = await getDatabase();
       await createExerciseVideo(db, {
         id: videoId,
