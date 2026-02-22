@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "GymBro",
+    "slug": "gymbro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "gymbro",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0D0D"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gymbro.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "GymBro records exercise form videos",
+        "NSMicrophoneUsageDescription": "GymBro records audio with your exercise videos",
+        "NSPhotoLibraryUsageDescription": "GymBro saves exercise videos to your library",
+        "NSPhotoLibraryAddUsageDescription": "GymBro saves exercise videos to your photo library"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D0D0D"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.gymbro.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "GymBro records exercise form videos",
+          "microphonePermission": "GymBro records audio with your exercise videos"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "GymBro saves exercise videos to your library",
+          "savePhotosPermission": "GymBro saves exercise videos to your photo library",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
