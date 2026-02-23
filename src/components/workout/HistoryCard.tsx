@@ -18,9 +18,10 @@ interface HistoryCardProps {
   exercises?: WorkoutExercise[];
   onPress: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-export function HistoryCard({ session, exercises = [], onPress, onDelete }: HistoryCardProps) {
+export function HistoryCard({ session, exercises = [], onPress, onDelete, onEdit }: HistoryCardProps) {
   const unit = useSettingsStore((s) => s.settings.weightUnit);
   const [expanded, setExpanded] = useState(false);
 
@@ -33,10 +34,20 @@ export function HistoryCard({ session, exercises = [], onPress, onDelete }: Hist
       onPress={() => setExpanded((v) => !v)}
       activeOpacity={0.85}
     >
-      {/* Row 1: Name + Date */}
+      {/* Row 1: Name + Date + Edit */}
       <View style={styles.headerRow}>
         <Text style={styles.name} numberOfLines={1}>{session.name || 'Workout'}</Text>
-        <Text style={styles.date}>{formatDisplayDate(session.startedAt)}</Text>
+        <View style={styles.headerActions}>
+          {onEdit && (
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); onEdit(); }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="pencil-outline" size={15} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+          <Text style={styles.date}>{formatDisplayDate(session.startedAt)}</Text>
+        </View>
       </View>
 
       {/* Row 2: Stats */}
@@ -89,18 +100,28 @@ export function HistoryCard({ session, exercises = [], onPress, onDelete }: Hist
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceElevated,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.07)',
     padding: Spacing.base,
     gap: Spacing.sm,
     marginBottom: Spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
   },
   name: {

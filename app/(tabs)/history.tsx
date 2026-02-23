@@ -6,16 +6,20 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase } from '../../src/db';
-import { getAllWorkoutSessions, deleteWorkoutSession, getWorkoutExercises } from '../../src/db/queries/workouts';
+import { getAllWorkoutSessions, deleteWorkoutSession, updateWorkoutSession, getWorkoutExercises } from '../../src/db/queries/workouts';
 import { WorkoutSession, WorkoutExercise } from '../../src/types';
 import { HistoryCard } from '../../src/components/workout/HistoryCard';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-import { Colors, Typography, Spacing } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
 import { formatDateISO, getWeekStart, getWeekEnd } from '../../src/utils/date';
 import { format, isThisWeek, startOfWeek } from 'date-fns';
 
@@ -25,6 +29,9 @@ type Section = { title: string; data: Session[] };
 export default function HistoryScreen() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +81,24 @@ export default function HistoryScreen() {
     return sections;
   }
 
+  function openEdit(session: Session) {
+    setEditName(session.name || '');
+    setEditNotes(session.notes || '');
+    setEditingSession(session);
+  }
+
+  async function handleSaveEdit() {
+    if (!editingSession) return;
+    const db = await getDatabase();
+    const name = editName.trim() || editingSession.name;
+    const notes = editNotes.trim();
+    await updateWorkoutSession(db, editingSession.id, { name, notes });
+    setSessions((prev) =>
+      prev.map((s) => s.id === editingSession.id ? { ...s, name, notes } : s),
+    );
+    setEditingSession(null);
+  }
+
   async function handleDelete(session: Session) {
     Alert.alert(
       'Delete Workout',
@@ -121,6 +146,7 @@ export default function HistoryScreen() {
               exercises={item.exercises}
               onPress={() => router.push(`/workout/${item.id}`)}
               onDelete={() => handleDelete(item)}
+              onEdit={() => openEdit(item)}
             />
           )}
           renderSectionHeader={({ section }) => (
@@ -132,6 +158,59 @@ export default function HistoryScreen() {
           stickySectionHeadersEnabled={false}
         />
       )}
+
+      {/* Edit Workout Modal */}
+      <Modal
+        visible={editingSession !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingSession(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.editModal}>
+            <Text style={styles.editTitle}>Edit Workout</Text>
+
+            <Text style={styles.editLabel}>Name</Text>
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Workout name"
+              placeholderTextColor={Colors.textMuted}
+              style={styles.editInput}
+              keyboardAppearance="dark"
+              autoFocus
+            />
+
+            <Text style={styles.editLabel}>Notes</Text>
+            <TextInput
+              value={editNotes}
+              onChangeText={setEditNotes}
+              placeholder="Add notes (optional)"
+              placeholderTextColor={Colors.textMuted}
+              style={[styles.editInput, styles.editNotesInput]}
+              keyboardAppearance="dark"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.editBtns}>
+              <TouchableOpacity
+                style={styles.editCancelBtn}
+                onPress={() => setEditingSession(null)}
+              >
+                <Text style={styles.editCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editSaveBtn} onPress={handleSaveEdit}>
+                <Text style={styles.editSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -170,5 +249,82 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.xxxl,
+  },
+  // Edit modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  editModal: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.xl,
+    width: '100%',
+    gap: Spacing.sm,
+  },
+  editTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  editLabel: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: Spacing.xs,
+  },
+  editInput: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: Typography.sizes.base,
+    color: Colors.textPrimary,
+    minHeight: 44,
+  },
+  editNotesInput: {
+    minHeight: 88,
+    paddingTop: Spacing.sm,
+  },
+  editBtns: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  editCancelBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  editCancelText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  editSaveBtn: {
+    flex: 2,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+  },
+  editSaveText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
 });

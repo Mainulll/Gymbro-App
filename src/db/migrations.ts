@@ -68,4 +68,19 @@ export const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       try { await db.runAsync(sql); } catch { /* column may already exist */ }
     }
   },
+
+  // Migration 3: Progress photos table
+  async (db: SQLiteDatabase) => {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS progress_photos (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        local_uri TEXT NOT NULL,
+        workout_session_id TEXT,
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_progress_photos_date ON progress_photos(date);
+    `);
+  },
 ];

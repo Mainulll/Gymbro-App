@@ -33,12 +33,28 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: 'Snacks',
 };
 
+// Alcohol helpers — 7 kcal/g pure ethanol, ethanol density 0.789 g/ml
+function alcoholKcalFromVolABV(volumeMl: number, abvPct: number): number {
+  return Math.round(volumeMl * (abvPct / 100) * 0.789 * 7);
+}
+const QUICK_DRINKS = [
+  { label: '🍺 Beer', sub: '330ml 4.5%', kcal: alcoholKcalFromVolABV(330, 4.5), name: '🍺 Beer (330ml, 4.5%)' },
+  { label: '🍷 Wine', sub: '150ml 13%', kcal: alcoholKcalFromVolABV(150, 13), name: '🍷 Wine (150ml, 13%)' },
+  { label: '🥃 Spirit', sub: '30ml 40%', kcal: alcoholKcalFromVolABV(30, 40), name: '🥃 Spirit (30ml, 40%)' },
+  { label: '🍺 Pint', sub: '568ml 4.5%', kcal: alcoholKcalFromVolABV(568, 4.5), name: '🍺 Beer Pint (568ml)' },
+];
+
 export default function CaloriesScreen() {
   const { currentDate, entries, summary, loadDay, addEntry, removeEntry } = useCalorieStore();
   const settings = useSettingsStore((s) => s.settings);
   const [viewDate, setViewDate] = useState(new Date());
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [addMeal, setAddMeal] = useState<MealType>('breakfast');
+  const [showAlcoholSheet, setShowAlcoholSheet] = useState(false);
+  const [stdDrinks, setStdDrinks] = useState('');
+  const [customVolMl, setCustomVolMl] = useState('');
+  const [customAbv, setCustomAbv] = useState('');
+  const [alcoholTab, setAlcoholTab] = useState<'quick' | 'custom'>('quick');
 
   // Form state
   const [foodName, setFoodName] = useState('');
@@ -117,6 +133,44 @@ export default function CaloriesScreen() {
     router.push({ pathname: '/barcode/scan', params: { meal } });
   }
 
+  async function logAlcohol(name: string, kcal: number) {
+    if (kcal <= 0) return;
+    await addEntry({
+      date: formatDateISO(viewDate),
+      mealType: 'snack',
+      foodName: name,
+      calories: kcal,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+      servingSize: 1,
+      servingUnit: 'serving',
+    });
+  }
+
+  async function handleQuickDrink(drink: typeof QUICK_DRINKS[0]) {
+    await logAlcohol(drink.name, drink.kcal);
+  }
+
+  async function handleStdDrinks() {
+    const n = parseFloat(stdDrinks);
+    if (isNaN(n) || n <= 0) return;
+    await logAlcohol(`🍻 ${n} standard drink${n !== 1 ? 's' : ''}`, Math.round(n * 70));
+    setStdDrinks('');
+    setShowAlcoholSheet(false);
+  }
+
+  async function handleCustomAlcohol() {
+    const vol = parseFloat(customVolMl);
+    const abv = parseFloat(customAbv);
+    if (isNaN(vol) || isNaN(abv) || vol <= 0 || abv <= 0) return;
+    const kcal = alcoholKcalFromVolABV(vol, abv);
+    await logAlcohol(`🥂 Drink (${vol}ml, ${abv}% ABV)`, kcal);
+    setCustomVolMl('');
+    setCustomAbv('');
+    setShowAlcoholSheet(false);
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
@@ -140,7 +194,7 @@ export default function CaloriesScreen() {
           </View>
 
           {/* Daily summary */}
-          <Card style={styles.summaryCard}>
+          <Card glass style={styles.summaryCard}>
             <View style={styles.summaryTop}>
               <ProgressRing
                 size={110}
@@ -247,6 +301,32 @@ export default function CaloriesScreen() {
             );
           })}
 
+          {/* Alcohol tracker card */}
+          <Card style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <Text style={styles.mealTitle}>🍻 Alcohol</Text>
+              <TouchableOpacity
+                style={styles.addMealBtn}
+                onPress={() => setShowAlcoholSheet(true)}
+              >
+                <Ionicons name="add" size={16} color={Colors.accent} />
+                <Text style={styles.addMealText}>Track</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.quickDrinksRow}>
+              {QUICK_DRINKS.map((d) => (
+                <TouchableOpacity
+                  key={d.name}
+                  style={styles.quickDrinkChip}
+                  onPress={() => handleQuickDrink(d)}
+                >
+                  <Text style={styles.quickDrinkLabel}>{d.label}</Text>
+                  <Text style={styles.quickDrinkSub}>{d.kcal} kcal</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Card>
+
           <View style={{ height: Spacing.xl }} />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -298,6 +378,111 @@ export default function CaloriesScreen() {
           <TouchableOpacity style={styles.logBtn} onPress={handleAddEntry}>
             <Text style={styles.logBtnText}>Log Food</Text>
           </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Alcohol Tracking Bottom Sheet */}
+      <BottomSheet
+        visible={showAlcoholSheet}
+        onClose={() => setShowAlcoholSheet(false)}
+        title="Track Alcohol"
+        snapHeight={480}
+      >
+        <View style={styles.addForm}>
+          {/* Tab switcher */}
+          <View style={styles.alcoholTabs}>
+            <TouchableOpacity
+              style={[styles.alcoholTab, alcoholTab === 'quick' && styles.alcoholTabActive]}
+              onPress={() => setAlcoholTab('quick')}
+            >
+              <Text style={[styles.alcoholTabText, alcoholTab === 'quick' && styles.alcoholTabTextActive]}>
+                Quick Add
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.alcoholTab, alcoholTab === 'custom' && styles.alcoholTabActive]}
+              onPress={() => setAlcoholTab('custom')}
+            >
+              <Text style={[styles.alcoholTabText, alcoholTab === 'custom' && styles.alcoholTabTextActive]}>
+                Custom
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {alcoholTab === 'quick' ? (
+            <>
+              <Text style={styles.alcoholHint}>Tap any drink to log it, or enter number of standard drinks (AU std = 70 kcal)</Text>
+              {QUICK_DRINKS.map((d) => (
+                <TouchableOpacity
+                  key={d.name}
+                  style={styles.drinkRow}
+                  onPress={async () => { await handleQuickDrink(d); setShowAlcoholSheet(false); }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drinkRowLabel}>{d.label}</Text>
+                    <Text style={styles.drinkRowSub}>{d.sub}</Text>
+                  </View>
+                  <Text style={styles.drinkRowKcal}>{d.kcal} kcal</Text>
+                  <Ionicons name="add-circle-outline" size={22} color={Colors.accent} />
+                </TouchableOpacity>
+              ))}
+              <View style={[styles.formRow, { alignItems: 'flex-end' }]}>
+                <View style={[styles.formInputWrapper, { flex: 1 }]}>
+                  <Text style={styles.formLabel}>Standard Drinks</Text>
+                  <TextInput
+                    value={stdDrinks}
+                    onChangeText={setStdDrinks}
+                    placeholder="e.g. 2"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="decimal-pad"
+                    keyboardAppearance="dark"
+                    style={styles.formInput}
+                  />
+                </View>
+                <TouchableOpacity style={[styles.logBtn, { flex: 1 }]} onPress={handleStdDrinks}>
+                  <Text style={styles.logBtnText}>Log ({Math.round((parseFloat(stdDrinks) || 0) * 70)} kcal)</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.alcoholHint}>Calculate calories from volume and alcohol content</Text>
+              <View style={styles.formRow}>
+                <View style={[styles.formInputWrapper, { flex: 1 }]}>
+                  <Text style={styles.formLabel}>Volume (ml)</Text>
+                  <TextInput
+                    value={customVolMl}
+                    onChangeText={setCustomVolMl}
+                    placeholder="e.g. 375"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="decimal-pad"
+                    keyboardAppearance="dark"
+                    style={styles.formInput}
+                  />
+                </View>
+                <View style={[styles.formInputWrapper, { flex: 1 }]}>
+                  <Text style={styles.formLabel}>ABV %</Text>
+                  <TextInput
+                    value={customAbv}
+                    onChangeText={setCustomAbv}
+                    placeholder="e.g. 5"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="decimal-pad"
+                    keyboardAppearance="dark"
+                    style={styles.formInput}
+                  />
+                </View>
+              </View>
+              {customVolMl && customAbv && (
+                <Text style={styles.alcoholCalcPreview}>
+                  ≈ {alcoholKcalFromVolABV(parseFloat(customVolMl) || 0, parseFloat(customAbv) || 0)} kcal
+                </Text>
+              )}
+              <TouchableOpacity style={styles.logBtn} onPress={handleCustomAlcohol}>
+                <Text style={styles.logBtnText}>Log Drink</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </BottomSheet>
     </SafeAreaView>
@@ -494,5 +679,90 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.base,
     fontWeight: '700',
     color: Colors.textPrimary,
+  },
+  // Alcohol tracker styles
+  quickDrinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+  quickDrinkChip: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    gap: 2,
+  },
+  quickDrinkLabel: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  quickDrinkSub: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+  },
+  alcoholTabs: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    padding: 3,
+    gap: 3,
+  },
+  alcoholTab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+  },
+  alcoholTabActive: {
+    backgroundColor: Colors.accent,
+  },
+  alcoholTabText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  alcoholTabTextActive: {
+    color: Colors.textPrimary,
+  },
+  alcoholHint: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  drinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  drinkRowLabel: {
+    fontSize: Typography.sizes.base,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  drinkRowSub: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+  },
+  drinkRowKcal: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.textSecondary,
+  },
+  alcoholCalcPreview: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: '700',
+    color: Colors.accent,
+    textAlign: 'center',
+    paddingVertical: Spacing.sm,
   },
 });

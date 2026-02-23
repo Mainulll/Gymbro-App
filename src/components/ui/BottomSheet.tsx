@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -71,9 +73,15 @@ export function BottomSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <TouchableWithoutFeedback onPress={onClose}>
-          <Animated.View style={[styles.backdrop, { opacity: opacityAnim }]} />
-        </TouchableWithoutFeedback>
+        {/* Blurred backdrop */}
+        <Animated.View style={[styles.backdropContainer, { opacity: opacityAnim }]}>
+          <TouchableWithoutFeedback onPress={onClose}>
+            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+          <Animated.View style={[styles.backdropDim, { opacity: opacityAnim }]} pointerEvents="none" />
+        </Animated.View>
+
+        {/* Sheet */}
         <Animated.View
           style={[
             styles.sheet,
@@ -81,6 +89,15 @@ export function BottomSheet({
             { transform: [{ translateY: slideAnim }] },
           ]}
         >
+          {/* Glass gradient top highlight */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.01)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.glassHighlight}
+            pointerEvents="none"
+          />
+
           <View style={styles.handle} />
           {title && (
             <View style={styles.header}>
@@ -104,9 +121,12 @@ export function BottomSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  backdropContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  backdropDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
     position: 'absolute',
@@ -117,14 +137,27 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     borderTopWidth: 1,
-    borderColor: Colors.border,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     paddingBottom: 34,
+    overflow: 'hidden',
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    pointerEvents: 'none',
   },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'center',
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
@@ -136,7 +169,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   title: {
     fontSize: Typography.sizes.md,

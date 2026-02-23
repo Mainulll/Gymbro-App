@@ -19,8 +19,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "GymBro records exercise form videos",
         "NSMicrophoneUsageDescription": "GymBro records audio with your exercise videos",
-        "NSPhotoLibraryUsageDescription": "GymBro saves exercise videos to your library",
-        "NSPhotoLibraryAddUsageDescription": "GymBro saves exercise videos to your photo library"
+        "NSPhotoLibraryUsageDescription": "GymBro saves exercise videos and progress photos to your library",
+        "NSPhotoLibraryAddUsageDescription": "GymBro saves exercise videos and progress photos to your photo library"
       }
     },
     "android": {
@@ -53,7 +53,14 @@
           "isAccessMediaLocationEnabled": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GymBro accesses your photos for progress photo tracking",
+          "cameraPermission": "GymBro uses your camera for progress photos"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

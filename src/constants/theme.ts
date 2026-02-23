@@ -3,8 +3,10 @@ export const Colors = {
   background: '#0D0D0D',
   surface: '#161616',
   surfaceElevated: '#1E1E1E',
+  surfaceGlass: 'rgba(255,255,255,0.05)',
   border: '#2A2A2A',
   borderLight: '#333333',
+  borderGlass: 'rgba(255,255,255,0.10)',
 
   // Brand
   accent: '#6C63FF',

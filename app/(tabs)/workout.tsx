@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,10 @@ import { getDatabase } from '../../src/db';
 import { getLastSetDataForExercise } from '../../src/db/queries/sets';
 import { getVideosForExercise } from '../../src/db/queries/videos';
 import { ExerciseVideo } from '../../src/types';
+import { generateId } from '../../src/utils/uuid';
+import { createProgressPhoto } from '../../src/db/queries/photos';
+import { formatDateISO } from '../../src/utils/date';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function WorkoutScreen() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
@@ -37,16 +42,19 @@ export default function WorkoutScreen() {
   const [prevSetsMap, setPrevSetsMap] = useState<Record<string, { weightKg: number | null; reps: number | null }[]>>({});
   const [videosMap, setVideosMap] = useState<Record<string, ExerciseVideo[]>>({});
 
+  // Always keep a ref to the latest loadPreviousData to avoid stale closures
+  const loadDataRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
     if (!activeWorkout) return;
-    loadPreviousData();
+    loadDataRef.current();
   }, [activeWorkout?.exercises.length]);
 
-  // Reload videos when returning from camera screen
+  // Reload videos when returning from camera — uses ref so it always sees latest exercises
   useFocusEffect(
     useCallback(() => {
-      if (activeWorkout) loadPreviousData();
-    }, [activeWorkout?.sessionId]),
+      loadDataRef.current();
+    }, []),
   );
 
   async function loadPreviousData() {
@@ -71,6 +79,9 @@ export default function WorkoutScreen() {
     setVideosMap(newVideos);
   }
 
+  // Update ref whenever loadPreviousData is redefined (every render)
+  loadDataRef.current = loadPreviousData;
+
   if (!activeWorkout) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -88,6 +99,75 @@ export default function WorkoutScreen() {
     );
   }
 
+  async function promptProgressPhoto(workoutId: string) {
+    Alert.alert(
+      '📸 Progress Photo',
+      'Want to snap a progress photo to track your physique?',
+      [
+        {
+          text: 'Skip',
+          style: 'cancel',
+          onPress: () => router.push(`/workout/${workoutId}`),
+        },
+        {
+          text: 'Take Photo',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Camera access is required for progress photos.');
+              router.push(`/workout/${workoutId}`);
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: 'images',
+              quality: 0.8,
+              allowsEditing: false,
+            });
+            if (!result.canceled && result.assets[0]) {
+              const db = await getDatabase();
+              await createProgressPhoto(db, {
+                id: generateId(),
+                date: formatDateISO(new Date()),
+                localUri: result.assets[0].uri,
+                workoutSessionId: workoutId,
+                notes: '',
+                createdAt: new Date().toISOString(),
+              });
+            }
+            router.push(`/workout/${workoutId}`);
+          },
+        },
+        {
+          text: 'Choose from Library',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission needed', 'Photo library access is required.');
+              router.push(`/workout/${workoutId}`);
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: 'images',
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets[0]) {
+              const db = await getDatabase();
+              await createProgressPhoto(db, {
+                id: generateId(),
+                date: formatDateISO(new Date()),
+                localUri: result.assets[0].uri,
+                workoutSessionId: workoutId,
+                notes: '',
+                createdAt: new Date().toISOString(),
+              });
+            }
+            router.push(`/workout/${workoutId}`);
+          },
+        },
+      ],
+    );
+  }
+
   async function handleFinish() {
     Alert.alert(
       'Finish Workout',
@@ -99,7 +179,7 @@ export default function WorkoutScreen() {
           style: 'default',
           onPress: async () => {
             const id = await finishWorkout();
-            if (id) router.push(`/workout/${id}`);
+            if (id) promptProgressPhoto(id);
           },
         },
       ],
@@ -297,9 +377,10 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.base,
     paddingBottom: Spacing.lg,
-    backgroundColor: Colors.background,
+    backgroundColor: 'rgba(10,10,10,0.8)',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
   },
   addExerciseBtn: {
     flex: 1,

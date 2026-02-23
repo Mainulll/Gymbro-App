@@ -175,6 +175,17 @@ export interface ActiveWorkout {
   isActive: boolean;
 }
 
+// ─── Progress Photos ──────────────────────────────────────────────────────────
+
+export interface ProgressPhoto {
+  id: string;
+  date: string;           // YYYY-MM-DD
+  localUri: string;
+  workoutSessionId: string | null;
+  notes: string;
+  createdAt: string;
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 export interface CSVExportOptions {

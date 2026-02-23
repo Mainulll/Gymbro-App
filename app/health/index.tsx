@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -15,12 +16,17 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline, Circle } from 'react-native-svg';
 import { useHealthStore } from '../../src/store/healthStore';
 import { useSettingsStore } from '../../src/store/settingsStore';
-import { BodyWeightLog, SleepLog } from '../../src/types';
+import { BodyWeightLog, SleepLog, ProgressPhoto } from '../../src/types';
 import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
 import { toDisplayWeightNumber } from '../../src/constants/units';
+import { formatDateISO } from '../../src/utils/date';
 import { format } from 'date-fns';
+import { getDatabase } from '../../src/db';
+import { getProgressPhotos, deleteProgressPhoto, createProgressPhoto } from '../../src/db/queries/photos';
+import { generateId } from '../../src/utils/uuid';
+import * as ImagePicker from 'expo-image-picker';
 
 const SCREEN_W = Dimensions.get('window').width;
 const CHART_W = SCREEN_W - Spacing.base * 4;
@@ -34,7 +40,8 @@ export default function HealthScreen() {
     useHealthStore();
   const unit = useSettingsStore((s) => s.settings.weightUnit);
 
-  const [activeTab, setActiveTab] = useState<'weight' | 'sleep'>('weight');
+  const [activeTab, setActiveTab] = useState<'weight' | 'sleep' | 'photos'>('weight');
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [showWeightSheet, setShowWeightSheet] = useState(false);
   const [showSleepSheet, setShowSleepSheet] = useState(false);
 
@@ -49,7 +56,79 @@ export default function HealthScreen() {
 
   useEffect(() => {
     if (!isLoaded) load();
+    loadPhotos();
   }, []);
+
+  async function loadPhotos() {
+    const db = await getDatabase();
+    const p = await getProgressPhotos(db, 200);
+    setPhotos(p);
+  }
+
+  async function handleAddPhoto() {
+    Alert.alert(
+      'Add Progress Photo',
+      'Choose source:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Camera',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.8 });
+            if (!result.canceled && result.assets[0]) {
+              const db = await getDatabase();
+              await createProgressPhoto(db, {
+                id: generateId(),
+                date: formatDateISO(new Date()),
+                localUri: result.assets[0].uri,
+                workoutSessionId: null,
+                notes: '',
+                createdAt: new Date().toISOString(),
+              });
+              loadPhotos();
+            }
+          },
+        },
+        {
+          text: 'Library',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.8 });
+            if (!result.canceled && result.assets[0]) {
+              const db = await getDatabase();
+              await createProgressPhoto(db, {
+                id: generateId(),
+                date: formatDateISO(new Date()),
+                localUri: result.assets[0].uri,
+                workoutSessionId: null,
+                notes: '',
+                createdAt: new Date().toISOString(),
+              });
+              loadPhotos();
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleDeletePhoto(photo: ProgressPhoto) {
+    Alert.alert('Delete Photo', 'Remove this progress photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const db = await getDatabase();
+          await deleteProgressPhoto(db, photo.id);
+          setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+        },
+      },
+    ]);
+  }
 
   function parseSleepDuration(bed: string, wake: string): number {
     const [bh, bm] = bed.split(':').map(Number);
@@ -97,7 +176,7 @@ export default function HealthScreen() {
             onPress={() => setActiveTab('weight')}
           >
             <Ionicons name="scale-outline" size={16} color={activeTab === 'weight' ? Colors.textPrimary : Colors.textMuted} />
-            <Text style={[styles.tabText, activeTab === 'weight' && styles.tabTextActive]}>Body Weight</Text>
+            <Text style={[styles.tabText, activeTab === 'weight' && styles.tabTextActive]}>Weight</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'sleep' && styles.tabActive]}
@@ -105,6 +184,13 @@ export default function HealthScreen() {
           >
             <Ionicons name="moon-outline" size={16} color={activeTab === 'sleep' ? Colors.textPrimary : Colors.textMuted} />
             <Text style={[styles.tabText, activeTab === 'sleep' && styles.tabTextActive]}>Sleep</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'photos' && styles.tabActive]}
+            onPress={() => setActiveTab('photos')}
+          >
+            <Ionicons name="camera-outline" size={16} color={activeTab === 'photos' ? Colors.textPrimary : Colors.textMuted} />
+            <Text style={[styles.tabText, activeTab === 'photos' && styles.tabTextActive]}>Photos</Text>
           </TouchableOpacity>
         </View>
 
@@ -132,6 +218,13 @@ export default function HealthScreen() {
                   { text: 'Delete', style: 'destructive', onPress: () => removeSleepLog(id) },
                 ])
               }
+            />
+          )}
+          {activeTab === 'photos' && (
+            <PhotosTab
+              photos={photos}
+              onAdd={handleAddPhoto}
+              onDelete={handleDeletePhoto}
             />
           )}
         </ScrollView>
@@ -443,6 +536,76 @@ function SleepTab({
   );
 }
 
+// ─── Photos Tab ───────────────────────────────────────────────────────────────
+
+const PHOTO_SIZE = (Dimensions.get('window').width - Spacing.base * 2 - Spacing.sm * 2) / 3;
+
+function PhotosTab({
+  photos,
+  onAdd,
+  onDelete,
+}: {
+  photos: ProgressPhoto[];
+  onAdd: () => void;
+  onDelete: (photo: ProgressPhoto) => void;
+}) {
+  const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
+
+  return (
+    <>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Progress Photos</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
+          <Ionicons name="camera" size={16} color={Colors.accent} />
+          <Text style={styles.addBtnText}>Add Photo</Text>
+        </TouchableOpacity>
+      </View>
+
+      {photos.length === 0 ? (
+        <View style={styles.emptyPhotos}>
+          <Ionicons name="images-outline" size={48} color={Colors.textMuted} />
+          <Text style={styles.emptyText}>No progress photos yet.</Text>
+          <Text style={styles.emptySubText}>Take photos after workouts to track your physique over time.</Text>
+        </View>
+      ) : (
+        <View style={styles.photoGrid}>
+          {photos.map((photo) => (
+            <TouchableOpacity
+              key={photo.id}
+              style={styles.photoItem}
+              onPress={() => setSelectedPhoto(photo)}
+              onLongPress={() => onDelete(photo)}
+            >
+              <Image source={{ uri: photo.localUri }} style={styles.photoThumb} />
+              <Text style={styles.photoDate}>{format(new Date(photo.date), 'MMM d')}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Full-screen photo viewer */}
+      {selectedPhoto && (
+        <PhotoViewer photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
+      )}
+    </>
+  );
+}
+
+function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => void }) {
+  const W = Dimensions.get('window').width;
+  const H = Dimensions.get('window').height;
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.photoOverlay]}>
+      <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+      <Image source={{ uri: photo.localUri }} style={{ width: W, height: H * 0.8 }} resizeMode="contain" />
+      <Text style={styles.photoViewerDate}>{format(new Date(photo.date), 'EEEE, MMMM d yyyy')}</Text>
+      <TouchableOpacity style={styles.photoCloseBtn} onPress={onClose}>
+        <Ionicons name="close-circle" size={36} color="white" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function StatBox({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
     <View style={styles.statBox}>
@@ -580,4 +743,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
+  // Photos tab
+  emptyPhotos: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+    gap: Spacing.md,
+  },
+  emptySubText: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingBottom: Spacing.xl,
+  },
+  photoItem: {
+    width: PHOTO_SIZE,
+    gap: 4,
+    alignItems: 'center',
+  },
+  photoThumb: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  photoDate: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+  },
+  photoOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  photoViewerDate: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: Typography.sizes.sm,
+    marginTop: Spacing.md,
+  },
+  photoCloseBtn: {
+    position: 'absolute',
+    top: 60,
+    right: Spacing.base,
+  },
 });
