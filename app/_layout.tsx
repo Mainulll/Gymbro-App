@@ -89,6 +89,20 @@ export default function RootLayout() {
             headerStyle: { backgroundColor: Colors.surface },
           }}
         />
+        <Stack.Screen
+          name="barcode/scan"
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+          }}
+        />
+        <Stack.Screen
+          name="health/index"
+          options={{
+            title: 'Health & Body',
+            headerStyle: { backgroundColor: Colors.background },
+          }}
+        />
       </Stack>
       <StatusBar style="light" />
     </GestureHandlerRootView>

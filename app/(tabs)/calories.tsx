@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCalorieStore } from '../../src/store/calorieStore';
 import { useSettingsStore } from '../../src/store/settingsStore';
@@ -22,6 +22,7 @@ import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
 import { formatDateISO } from '../../src/utils/date';
+import { consumePendingCaloriePrefill } from '../../src/utils/caloriePrefill';
 import { format, addDays, subDays } from 'date-fns';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -49,6 +50,18 @@ export default function CaloriesScreen() {
   useFocusEffect(
     React.useCallback(() => {
       loadDay(formatDateISO(viewDate));
+      // Consume any pending prefill from barcode scan
+      const prefill = consumePendingCaloriePrefill();
+      if (prefill) {
+        const meal = (prefill.meal as MealType) || 'snack';
+        setAddMeal(meal);
+        setFoodName(prefill.foodName ?? '');
+        setCalories(prefill.calories ?? '');
+        setProtein(prefill.protein ?? '');
+        setCarbs(prefill.carbs ?? '');
+        setFat(prefill.fat ?? '');
+        setShowAddSheet(true);
+      }
     }, [viewDate]),
   );
 
@@ -98,6 +111,10 @@ export default function CaloriesScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => removeEntry(entry.id) },
     ]);
+  }
+
+  function openBarcode(meal: MealType) {
+    router.push({ pathname: '/barcode/scan', params: { meal } });
   }
 
   return (
@@ -186,6 +203,13 @@ export default function CaloriesScreen() {
                     {mealCals > 0 && (
                       <Text style={styles.mealCals}>{Math.round(mealCals)} kcal</Text>
                     )}
+                    {/* Barcode scan button */}
+                    <TouchableOpacity
+                      style={styles.barcodeBtn}
+                      onPress={() => openBarcode(meal)}
+                    >
+                      <Ionicons name="barcode-outline" size={16} color={Colors.textSecondary} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.addMealBtn}
                       onPress={() => openAdd(meal)}
@@ -205,9 +229,16 @@ export default function CaloriesScreen() {
                       style={styles.entryRow}
                       onLongPress={() => handleDeleteEntry(entry)}
                     >
-                      <Text style={styles.entryName} numberOfLines={1}>
-                        {entry.foodName}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.entryName} numberOfLines={1}>
+                          {entry.foodName}
+                        </Text>
+                        {(entry.proteinG > 0 || entry.carbsG > 0 || entry.fatG > 0) && (
+                          <Text style={styles.entryMacros}>
+                            P {Math.round(entry.proteinG)}g · C {Math.round(entry.carbsG)}g · F {Math.round(entry.fatG)}g
+                          </Text>
+                        )}
+                      </View>
                       <Text style={styles.entryCals}>{Math.round(entry.calories)} kcal</Text>
                     </TouchableOpacity>
                   ))
@@ -225,9 +256,18 @@ export default function CaloriesScreen() {
         visible={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         title={`Add to ${MEAL_LABELS[addMeal]}`}
-        snapHeight={480}
+        snapHeight={520}
       >
         <View style={styles.addForm}>
+          {/* Barcode scan shortcut inside sheet */}
+          <TouchableOpacity
+            style={styles.barcodeSheetBtn}
+            onPress={() => { setShowAddSheet(false); openBarcode(addMeal); }}
+          >
+            <Ionicons name="barcode-outline" size={18} color={Colors.accent} />
+            <Text style={styles.barcodeSheetText}>Scan Barcode</Text>
+          </TouchableOpacity>
+
           <TextInput
             value={foodName}
             onChangeText={setFoodName}
@@ -348,11 +388,19 @@ const styles = StyleSheet.create({
   mealHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   mealCals: {
     fontSize: Typography.sizes.sm,
     color: Colors.textSecondary,
+  },
+  barcodeBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceElevated,
   },
   addMealBtn: {
     flexDirection: 'row',
@@ -381,11 +429,17 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
+    gap: Spacing.sm,
   },
   entryName: {
     flex: 1,
     fontSize: Typography.sizes.base,
     color: Colors.textPrimary,
+  },
+  entryMacros: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+    marginTop: 1,
   },
   entryCals: {
     fontSize: Typography.sizes.sm,
@@ -393,6 +447,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   addForm: { gap: Spacing.md },
+  barcodeSheetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  barcodeSheetText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+    color: Colors.accent,
+  },
   formRow: { flexDirection: 'row', gap: Spacing.sm },
   formInputWrapper: { gap: 4 },
   formLabel: {

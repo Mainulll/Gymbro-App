@@ -2,6 +2,17 @@
 
 export type WeightUnit = 'kg' | 'lbs';
 
+export type GoalType = 'lose_fat' | 'maintain' | 'build_muscle';
+
+export type ActivityLevel =
+  | 'sedentary'
+  | 'lightly_active'
+  | 'moderately_active'
+  | 'very_active'
+  | 'extra_active';
+
+export type Sex = 'male' | 'female';
+
 export type MuscleGroup =
   | 'chest'
   | 'back'
@@ -101,6 +112,28 @@ export interface DailyNutritionSummary {
   entryCount: number;
 }
 
+// ─── Health Tracking ──────────────────────────────────────────────────────────
+
+export interface BodyWeightLog {
+  id: string;
+  date: string;           // YYYY-MM-DD
+  weightKg: number;
+  bodyFatPct: number | null;
+  notes: string;
+  createdAt: string;
+}
+
+export interface SleepLog {
+  id: string;
+  date: string;           // YYYY-MM-DD (the morning date — when you woke up)
+  bedTime: string;        // HH:MM
+  wakeTime: string;       // HH:MM
+  durationMinutes: number;
+  quality: number;        // 1-5
+  notes: string;
+  createdAt: string;
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export interface UserSettings {
@@ -111,6 +144,13 @@ export interface UserSettings {
   dailyFatGoal: number;
   restTimerSeconds: number;
   hapticFeedback: boolean;
+  // Body stats for TDEE
+  heightCm: number | null;
+  ageYears: number | null;
+  sex: Sex | null;
+  activityLevel: ActivityLevel;
+  goalType: GoalType;
+  targetWeightKg: number | null;
 }
 
 // ─── Active Workout (in-memory Zustand state) ─────────────────────────────────

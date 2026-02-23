@@ -7,7 +7,6 @@ import {
   Switch,
   StyleSheet,
   TextInput,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -16,8 +15,21 @@ import { useSettingsStore } from '../../src/store/settingsStore';
 import { Card } from '../../src/components/ui/Card';
 import { Divider } from '../../src/components/ui/Divider';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { ActivityLevel, GoalType, Sex } from '../../src/types';
+import {
+  calcTDEE,
+  calcTargetCalories,
+  calcMacros,
+  ACTIVITY_LABELS,
+  GOAL_LABELS,
+} from '../../src/utils/tdee';
 
 const REST_TIMES = [60, 90, 120, 180, 240];
+
+const ACTIVITY_LEVELS: ActivityLevel[] = [
+  'sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extra_active',
+];
+const GOAL_TYPES: GoalType[] = ['lose_fat', 'maintain', 'build_muscle'];
 
 export default function ProfileScreen() {
   const { settings, update } = useSettingsStore();
@@ -29,13 +41,163 @@ export default function ProfileScreen() {
     }
   }
 
+  // Compute TDEE if enough data
+  const canComputeTDEE =
+    settings.heightCm &&
+    settings.ageYears &&
+    settings.sex &&
+    settings.weightUnit;
+
+  let tdee: number | null = null;
+  let suggestedCalories: number | null = null;
+  let suggestedMacros: { protein: number; carbs: number; fat: number } | null = null;
+
+  if (canComputeTDEE && settings.heightCm && settings.ageYears && settings.sex) {
+    // Use target weight if set, otherwise approximate from 70kg default
+    const weightKg = settings.targetWeightKg ?? 70;
+    tdee = calcTDEE(weightKg, settings.heightCm, settings.ageYears, settings.sex, settings.activityLevel);
+    suggestedCalories = calcTargetCalories(tdee, settings.goalType);
+    suggestedMacros = calcMacros(suggestedCalories, weightKg, settings.goalType);
+  }
+
+  function applyTDEESuggestion() {
+    if (!suggestedCalories || !suggestedMacros) return;
+    update({
+      dailyCalorieGoal: suggestedCalories,
+      dailyProteinGoal: suggestedMacros.protein,
+      dailyCarbsGoal: suggestedMacros.carbs,
+      dailyFatGoal: suggestedMacros.fat,
+    });
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Profile</Text>
 
-        {/* Goals */}
-        <SectionHeader label="Daily Goals" />
+        {/* Body Stats */}
+        <SectionHeader label="Body Stats" />
+        <Card style={styles.card}>
+          {/* Sex */}
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Biological Sex</Text>
+            <View style={styles.segmented}>
+              {(['male', 'female'] as Sex[]).map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.segBtn, settings.sex === s && styles.segBtnActive]}
+                  onPress={() => update({ sex: s })}
+                >
+                  <Text style={[styles.segBtnText, settings.sex === s && styles.segBtnTextActive]}>
+                    {s === 'male' ? 'Male' : 'Female'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <Divider />
+          <View style={styles.statsRow}>
+            <GoalInput
+              label="Age"
+              unit="yrs"
+              value={settings.ageYears ? String(settings.ageYears) : ''}
+              onBlur={(v) => { const n = parseInt(v); if (n > 0) update({ ageYears: n }); }}
+              flex
+            />
+            <GoalInput
+              label="Height"
+              unit="cm"
+              value={settings.heightCm ? String(settings.heightCm) : ''}
+              onBlur={(v) => { const n = parseFloat(v); if (n > 0) update({ heightCm: n }); }}
+              flex
+            />
+            <GoalInput
+              label="Target Wt"
+              unit={settings.weightUnit}
+              value={settings.targetWeightKg
+                ? String(settings.weightUnit === 'lbs'
+                    ? Math.round(settings.targetWeightKg * 2.205)
+                    : settings.targetWeightKg)
+                : ''}
+              onBlur={(v) => {
+                const n = parseFloat(v);
+                if (n > 0) {
+                  update({ targetWeightKg: settings.weightUnit === 'lbs' ? n / 2.205 : n });
+                }
+              }}
+              flex
+            />
+          </View>
+        </Card>
+
+        {/* Body Composition Goal */}
+        <SectionHeader label="Body Composition Goal" />
+        <Card style={styles.card}>
+          <View style={styles.col}>
+            <Text style={styles.rowLabel}>Goal</Text>
+            <View style={styles.goalTypeRow}>
+              {GOAL_TYPES.map((g) => (
+                <TouchableOpacity
+                  key={g}
+                  style={[styles.goalTypeBtn, settings.goalType === g && styles.goalTypeBtnActive]}
+                  onPress={() => update({ goalType: g })}
+                >
+                  <Text style={[styles.goalTypeBtnText, settings.goalType === g && styles.goalTypeBtnTextActive]}>
+                    {GOAL_LABELS[g]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <Divider />
+          <View style={styles.col}>
+            <Text style={styles.rowLabel}>Activity Level</Text>
+            <View style={styles.activityCol}>
+              {ACTIVITY_LEVELS.map((a) => (
+                <TouchableOpacity
+                  key={a}
+                  style={[styles.activityBtn, settings.activityLevel === a && styles.activityBtnActive]}
+                  onPress={() => update({ activityLevel: a })}
+                >
+                  <Text style={[styles.activityBtnText, settings.activityLevel === a && styles.activityBtnTextActive]}>
+                    {ACTIVITY_LABELS[a]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* TDEE result */}
+          {tdee && suggestedCalories && suggestedMacros && (
+            <>
+              <Divider />
+              <View style={styles.tdeeBox}>
+                <View style={styles.tdeeRow}>
+                  <View style={styles.tdeeStat}>
+                    <Text style={styles.tdeeValue}>{tdee}</Text>
+                    <Text style={styles.tdeeLabel}>TDEE</Text>
+                  </View>
+                  <Ionicons name="arrow-forward" size={16} color={Colors.textMuted} />
+                  <View style={styles.tdeeStat}>
+                    <Text style={[styles.tdeeValue, { color: Colors.accent }]}>{suggestedCalories}</Text>
+                    <Text style={styles.tdeeLabel}>Target kcal</Text>
+                  </View>
+                  <View style={styles.tdeeMacros}>
+                    <Text style={styles.tdeeMacroText}>P {suggestedMacros.protein}g</Text>
+                    <Text style={styles.tdeeMacroText}>C {suggestedMacros.carbs}g</Text>
+                    <Text style={styles.tdeeMacroText}>F {suggestedMacros.fat}g</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.applyBtn} onPress={applyTDEESuggestion}>
+                  <Text style={styles.applyBtnText}>Apply to Daily Goals</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </Card>
+
+        {/* Daily Goals (manual override) */}
+        <SectionHeader label="Daily Nutrition Goals" />
         <Card style={styles.card}>
           <GoalInput
             label="Calories"
@@ -90,8 +252,6 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Divider />
-
-          {/* Rest Timer */}
           <View style={styles.col}>
             <Text style={styles.rowLabel}>Default Rest Timer</Text>
             <View style={styles.restRow}>
@@ -109,8 +269,6 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Divider />
-
-          {/* Haptic Feedback */}
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Haptic Feedback</Text>
             <Switch
@@ -120,6 +278,16 @@ export default function ProfileScreen() {
               thumbColor={Colors.textPrimary}
             />
           </View>
+        </Card>
+
+        {/* Health & Body */}
+        <SectionHeader label="Health & Body" />
+        <Card style={styles.card}>
+          <NavRow
+            icon="fitness-outline"
+            label="Body Weight & Sleep Log"
+            onPress={() => router.push('/health')}
+          />
         </Card>
 
         {/* Data */}
@@ -148,9 +316,7 @@ export default function ProfileScreen() {
 }
 
 function SectionHeader({ label }: { label: string }) {
-  return (
-    <Text style={styles.sectionHeader}>{label}</Text>
-  );
+  return <Text style={styles.sectionHeader}>{label}</Text>;
 }
 
 function GoalInput({
@@ -233,6 +399,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   col: { gap: Spacing.sm, paddingVertical: Spacing.xs },
+  statsRow: { flexDirection: 'row', gap: Spacing.sm },
   rowLabel: {
     fontSize: Typography.sizes.base,
     color: Colors.textPrimary,
@@ -253,12 +420,58 @@ const styles = StyleSheet.create({
   segBtn: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    minWidth: 44,
+    minWidth: 50,
     alignItems: 'center',
   },
   segBtnActive: { backgroundColor: Colors.accent },
   segBtnText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textSecondary },
   segBtnTextActive: { color: Colors.textPrimary },
+  goalTypeRow: { flexDirection: 'row', gap: Spacing.xs },
+  goalTypeBtn: {
+    flex: 1,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  goalTypeBtnActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
+  goalTypeBtnText: { fontSize: Typography.sizes.xs, fontWeight: '600', color: Colors.textSecondary },
+  goalTypeBtnTextActive: { color: Colors.accentLight },
+  activityCol: { gap: Spacing.xs },
+  activityBtn: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  activityBtnActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
+  activityBtnText: { fontSize: Typography.sizes.sm, fontWeight: '500', color: Colors.textSecondary },
+  activityBtnTextActive: { color: Colors.accentLight },
+  tdeeBox: { gap: Spacing.sm },
+  tdeeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+  },
+  tdeeStat: { alignItems: 'center', gap: 2 },
+  tdeeValue: { fontSize: Typography.sizes.xl, fontWeight: '700', color: Colors.textPrimary },
+  tdeeLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
+  tdeeMacros: { flex: 1, gap: 2, alignItems: 'flex-end' },
+  tdeeMacroText: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
+  applyBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  applyBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.sm },
   restRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   restBtn: {
     paddingHorizontal: Spacing.md,

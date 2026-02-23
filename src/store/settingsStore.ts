@@ -18,6 +18,12 @@ const defaults: UserSettings = {
   dailyFatGoal: 65,
   restTimerSeconds: 90,
   hapticFeedback: true,
+  heightCm: null,
+  ageYears: null,
+  sex: null,
+  activityLevel: 'moderately_active',
+  goalType: 'maintain',
+  targetWeightKg: null,
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({

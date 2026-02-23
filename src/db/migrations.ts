@@ -27,4 +27,45 @@ export const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       );
     }
   },
+
+  // Migration 2: Health tracking tables + body stats in user_settings
+  async (db: SQLiteDatabase) => {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS body_weight_logs (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        weight_kg REAL NOT NULL,
+        body_fat_pct REAL,
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS sleep_logs (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        bed_time TEXT NOT NULL DEFAULT '',
+        wake_time TEXT NOT NULL DEFAULT '',
+        duration_minutes INTEGER NOT NULL DEFAULT 0,
+        quality INTEGER NOT NULL DEFAULT 3,
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_body_weight_logs_date ON body_weight_logs(date);
+      CREATE INDEX IF NOT EXISTS idx_sleep_logs_date ON sleep_logs(date);
+    `);
+
+    // Add new columns to user_settings (SQLite ALTER TABLE — one at a time)
+    const alterCols = [
+      `ALTER TABLE user_settings ADD COLUMN height_cm REAL`,
+      `ALTER TABLE user_settings ADD COLUMN age_years INTEGER`,
+      `ALTER TABLE user_settings ADD COLUMN sex TEXT`,
+      `ALTER TABLE user_settings ADD COLUMN activity_level TEXT NOT NULL DEFAULT 'moderately_active'`,
+      `ALTER TABLE user_settings ADD COLUMN goal_type TEXT NOT NULL DEFAULT 'maintain'`,
+      `ALTER TABLE user_settings ADD COLUMN target_weight_kg REAL`,
+    ];
+    for (const sql of alterCols) {
+      try { await db.runAsync(sql); } catch { /* column may already exist */ }
+    }
+  },
 ];

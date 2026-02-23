@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutStore } from '../../src/store/workoutStore';
 import { useSettingsStore } from '../../src/store/settingsStore';
@@ -41,6 +41,13 @@ export default function WorkoutScreen() {
     if (!activeWorkout) return;
     loadPreviousData();
   }, [activeWorkout?.exercises.length]);
+
+  // Reload videos when returning from camera screen
+  useFocusEffect(
+    useCallback(() => {
+      if (activeWorkout) loadPreviousData();
+    }, [activeWorkout?.sessionId]),
+  );
 
   async function loadPreviousData() {
     if (!activeWorkout) return;

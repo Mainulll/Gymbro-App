@@ -4,16 +4,19 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
 import { ActiveExercise, ExerciseVideo } from '../../types';
 import { SetRow } from './SetRow';
 import { useWorkoutStore } from '../../store/workoutStore';
 import { MUSCLE_GROUP_LABELS } from '../../constants/exercises';
+
+const { width: SCREEN_W } = Dimensions.get('window');
 
 interface ExerciseCardProps {
   exercise: ActiveExercise;
@@ -33,14 +36,37 @@ export function ExerciseCard({
   const { addSet, updateSet, completeSet, uncompleteSet, removeSet, removeExercise } =
     useWorkoutStore();
   const [showOptions, setShowOptions] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<ExerciseVideo | null>(null);
 
   const muscleLabel = MUSCLE_GROUP_LABELS[exercise.template.muscleGroup];
 
+  // Group videos by setId for per-set display
+  const videosBySet = new Map<string, ExerciseVideo[]>();
+  const unlinkedVideos: ExerciseVideo[] = [];
+  for (const v of videos) {
+    if (v.setId) {
+      const list = videosBySet.get(v.setId) ?? [];
+      list.push(v);
+      videosBySet.set(v.setId, list);
+    } else {
+      unlinkedVideos.push(v);
+    }
+  }
+
   async function handleComplete(setId: string) {
-    const s = exercise.sets.find((st) => st.id === setId);
-    if (!s) return;
     await completeSet(exercise.workoutExerciseId, setId);
     onShowRestTimer();
+  }
+
+  function openCameraForSet(setId: string) {
+    router.push({
+      pathname: '/camera/record',
+      params: {
+        workoutExerciseId: exercise.workoutExerciseId,
+        exerciseName: exercise.template.name,
+        setId,
+      },
+    });
   }
 
   return (
@@ -100,27 +126,65 @@ export function ExerciseCard({
         <Text style={[styles.colHeader, { width: 40, textAlign: 'center' }]}></Text>
       </View>
 
-      {/* Sets */}
-      {exercise.sets.map((set, i) => (
-        <SetRow
-          key={set.id}
-          set={set}
-          previousWeight={previousSets[i]?.weightKg}
-          previousReps={previousSets[i]?.reps}
-          onWeightChange={(val) =>
-            updateSet(exercise.workoutExerciseId, set.id, { weightKg: val })
-          }
-          onRepsChange={(val) =>
-            updateSet(exercise.workoutExerciseId, set.id, { reps: val })
-          }
-          onComplete={() => handleComplete(set.id)}
-          onUncomplete={() => uncompleteSet(exercise.workoutExerciseId, set.id)}
-          onDelete={() => removeSet(exercise.workoutExerciseId, set.id)}
-          onToggleWarmup={() =>
-            updateSet(exercise.workoutExerciseId, set.id, { isWarmup: !set.isWarmup })
-          }
-        />
-      ))}
+      {/* Sets — each one may have an attached video */}
+      {exercise.sets.map((set, i) => {
+        const setVideos = videosBySet.get(set.id) ?? [];
+        return (
+          <View key={set.id}>
+            <View style={styles.setRowWrapper}>
+              <View style={{ flex: 1 }}>
+                <SetRow
+                  set={set}
+                  previousWeight={previousSets[i]?.weightKg}
+                  previousReps={previousSets[i]?.reps}
+                  onWeightChange={(val) =>
+                    updateSet(exercise.workoutExerciseId, set.id, { weightKg: val })
+                  }
+                  onRepsChange={(val) =>
+                    updateSet(exercise.workoutExerciseId, set.id, { reps: val })
+                  }
+                  onComplete={() => handleComplete(set.id)}
+                  onUncomplete={() => uncompleteSet(exercise.workoutExerciseId, set.id)}
+                  onDelete={() => removeSet(exercise.workoutExerciseId, set.id)}
+                  onToggleWarmup={() =>
+                    updateSet(exercise.workoutExerciseId, set.id, { isWarmup: !set.isWarmup })
+                  }
+                />
+              </View>
+              {/* Per-set camera icon */}
+              <TouchableOpacity
+                style={styles.setVideoBtn}
+                onPress={() => openCameraForSet(set.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+              >
+                <Ionicons
+                  name={setVideos.length > 0 ? 'videocam' : 'videocam-outline'}
+                  size={16}
+                  color={setVideos.length > 0 ? Colors.accent : Colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Inline video thumbnails for this set */}
+            {setVideos.length > 0 && (
+              <View style={styles.setVideosRow}>
+                {setVideos.map((v) => (
+                  <TouchableOpacity
+                    key={v.id}
+                    style={styles.setVideoThumb}
+                    onPress={() => setPlayingVideo(v)}
+                  >
+                    <View style={styles.thumbPlaceholder}>
+                      <Ionicons name="play-circle" size={22} color={Colors.accent} />
+                    </View>
+                    <Text style={styles.thumbDuration}>{Math.round(v.durationSeconds)}s</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
 
       {/* Add Set */}
       <TouchableOpacity
@@ -131,45 +195,74 @@ export function ExerciseCard({
         <Text style={styles.addSetText}>Add Set</Text>
       </TouchableOpacity>
 
-      {/* Video thumbnails */}
-      {videos.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.videosRow}
-          contentContainerStyle={{ gap: Spacing.sm, paddingHorizontal: Spacing.base }}
-        >
-          {videos.map((v) => (
-            <TouchableOpacity key={v.id} style={styles.videoThumb}>
-              {v.thumbnailUri ? (
-                <Image source={{ uri: v.thumbnailUri }} style={styles.thumbImage} />
-              ) : (
-                <View style={[styles.thumbImage, styles.thumbPlaceholder]}>
-                  <Ionicons name="play-circle" size={24} color={Colors.accent} />
+      {/* Unlinked exercise-level videos */}
+      {unlinkedVideos.length > 0 && (
+        <View style={styles.unlinkedVideos}>
+          <Text style={styles.unlinkedLabel}>Exercise Videos</Text>
+          <View style={styles.videoRow}>
+            {unlinkedVideos.map((v) => (
+              <TouchableOpacity
+                key={v.id}
+                style={styles.setVideoThumb}
+                onPress={() => setPlayingVideo(v)}
+              >
+                <View style={styles.thumbPlaceholder}>
+                  <Ionicons name="play-circle" size={22} color={Colors.accent} />
                 </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text style={styles.thumbDuration}>{Math.round(v.durationSeconds)}s</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       )}
 
-      {/* Record video button */}
-      <TouchableOpacity
-        style={styles.recordBtn}
-        onPress={() =>
-          router.push({
-            pathname: '/camera/record',
-            params: {
-              workoutExerciseId: exercise.workoutExerciseId,
-              exerciseName: exercise.template.name,
-            },
-          })
-        }
-      >
-        <Ionicons name="videocam-outline" size={14} color={Colors.textMuted} />
-        <Text style={styles.recordText}>Record exercise</Text>
-      </TouchableOpacity>
+      {/* Video player modal */}
+      {playingVideo && (
+        <VideoPlayerModal
+          video={playingVideo}
+          onClose={() => setPlayingVideo(null)}
+        />
+      )}
     </View>
+  );
+}
+
+// ─── Video Player Modal ───────────────────────────────────────────────────────
+
+function VideoPlayerModal({
+  video,
+  onClose,
+}: {
+  video: ExerciseVideo;
+  onClose: () => void;
+}) {
+  const player = useVideoPlayer(video.localUri, (p) => {
+    p.loop = false;
+    p.play();
+  });
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.overlay}>
+        <TouchableOpacity style={modalStyles.backdrop} onPress={onClose} activeOpacity={1} />
+        <View style={modalStyles.container}>
+          <VideoView
+            player={player}
+            style={modalStyles.video}
+            contentFit="contain"
+            nativeControls
+          />
+          <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
+            <Ionicons name="close-circle" size={32} color="white" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -234,6 +327,44 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  setRowWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: Spacing.sm,
+  },
+  setVideoBtn: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  setVideosRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.xs,
+  },
+  setVideoThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+    backgroundColor: Colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  thumbPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbDuration: {
+    fontSize: 9,
+    color: Colors.textMuted,
+  },
   addSetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -253,35 +384,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.accent,
   },
-  videosRow: {
-    marginBottom: Spacing.xs,
-  },
-  videoThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  thumbImage: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.sm,
-  },
-  thumbPlaceholder: {
-    backgroundColor: Colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recordBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  unlinkedVideos: {
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.sm,
     gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    marginBottom: Spacing.sm,
   },
-  recordText: {
-    fontSize: Typography.sizes.sm,
+  unlinkedLabel: {
+    fontSize: Typography.sizes.xs,
     color: Colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  videoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+});
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  container: {
+    width: SCREEN_W - Spacing.base * 2,
+    aspectRatio: 9 / 16,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  video: {
+    flex: 1,
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
   },
 });

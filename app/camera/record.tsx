@@ -20,9 +20,10 @@ import { Colors, Spacing, Typography, Radius } from '../../src/constants/theme';
 const MAX_DURATION = 60000; // 60 seconds
 
 export default function RecordScreen() {
-  const { workoutExerciseId, exerciseName } = useLocalSearchParams<{
+  const { workoutExerciseId, exerciseName, setId } = useLocalSearchParams<{
     workoutExerciseId: string;
     exerciseName: string;
+    setId?: string;
   }>();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -130,7 +131,7 @@ export default function RecordScreen() {
       await createExerciseVideo(db, {
         id: videoId,
         workoutExerciseId,
-        setId: null,
+        setId: setId ?? null,
         localUri: destUri,
         thumbnailUri: '',
         durationSeconds: durationSec,
