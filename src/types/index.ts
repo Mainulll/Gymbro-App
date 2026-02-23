@@ -148,13 +148,17 @@ export interface UserSettings {
   dailyFatGoal: number;
   restTimerSeconds: number;
   hapticFeedback: boolean;
+  // Profile identity
+  displayName: string;
+  profilePhotoUri: string | null;
   // Body stats for TDEE
   heightCm: number | null;
   ageYears: number | null;
   sex: Sex | null;
+  currentWeightKg: number | null;
+  targetWeightKg: number | null;
   activityLevel: ActivityLevel;
   goalType: GoalType;
-  targetWeightKg: number | null;
 }
 
 // ─── Active Workout (in-memory Zustand state) ─────────────────────────────────

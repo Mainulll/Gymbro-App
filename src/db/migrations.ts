@@ -96,4 +96,16 @@ export const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       try { await db.runAsync(sql); } catch { /* column may already exist */ }
     }
   },
+
+  // Migration 5: Extended user profile fields
+  async (db: SQLiteDatabase) => {
+    const cols = [
+      'ALTER TABLE user_settings ADD COLUMN current_weight_kg REAL',
+      "ALTER TABLE user_settings ADD COLUMN display_name TEXT NOT NULL DEFAULT ''",
+      'ALTER TABLE user_settings ADD COLUMN profile_photo_uri TEXT',
+    ];
+    for (const sql of cols) {
+      try { await db.runAsync(sql); } catch { /* column may already exist */ }
+    }
+  },
 ];

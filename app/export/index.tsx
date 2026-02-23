@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -218,5 +219,3 @@ const styles = StyleSheet.create({
   exportBtnText: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary },
 });
 
-// Platform import needed for monospace font
-import { Platform } from 'react-native';

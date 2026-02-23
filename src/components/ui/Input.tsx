@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TextInputProps,
+  TextStyle,
   ViewStyle,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
@@ -50,7 +51,7 @@ interface NumericInputProps {
   value: string;
   onChangeText: (val: string) => void;
   placeholder?: string;
-  style?: ViewStyle;
+  style?: TextStyle;
 }
 
 export function NumericInput({ value, onChangeText, placeholder = '0', style }: NumericInputProps) {
