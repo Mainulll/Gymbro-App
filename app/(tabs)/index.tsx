@@ -31,6 +31,7 @@ import {
   formatDurationMinutes,
 } from '../../src/utils/date';
 import { formatVolume } from '../../src/constants/units';
+import { AppLogo } from '../../src/components/ui/AppLogo';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -91,7 +92,10 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting} 👋</Text>
-            <Text style={styles.appName}>GymBro</Text>
+            <View style={styles.logoRow}>
+              <AppLogo size={26} />
+              <Text style={styles.appName}>GymBro</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={() => router.push('/export')} style={styles.exportBtn}>
             <Ionicons name="share-outline" size={20} color={Colors.accentLight} />
@@ -372,6 +376,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   greeting: { fontSize: Typography.sizes.sm, color: Colors.textSecondary, fontWeight: '500' },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: 2,
+  },
   appName: {
     fontSize: 34,
     fontWeight: '800',

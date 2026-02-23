@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { Card } from '../../src/components/ui/Card';
+import { AppLogo } from '../../src/components/ui/AppLogo';
 import { Divider } from '../../src/components/ui/Divider';
 import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { ActivityLevel, GoalType, Sex } from '../../src/types';
@@ -309,10 +310,13 @@ export default function ProfileScreen() {
 
         {/* About */}
         <SectionHeader label="About" />
-        <Card style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Version</Text>
-            <Text style={styles.rowValue}>1.0.0</Text>
+        <Card glass style={styles.card}>
+          <View style={styles.aboutRow}>
+            <AppLogo size={48} rounded />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aboutAppName}>GymBro</Text>
+              <Text style={styles.aboutVersion}>Version 1.0.0 · Built with ❤️</Text>
+            </View>
           </View>
         </Card>
 
@@ -536,5 +540,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.surfaceElevated,
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  aboutAppName: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  aboutVersion: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
 });

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Main background gradient: purple → deep teal -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C6FFF"/>
+      <stop offset="55%" stop-color="#5A4FD6"/>
+      <stop offset="100%" stop-color="#00C9B4"/>
+    </linearGradient>
+    <!-- Top highlight for glass depth -->
+    <linearGradient id="shimmer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
+    </linearGradient>
+    <!-- Plate gradient for 3D feel -->
+    <linearGradient id="plateGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,1.00)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.88)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Background ── -->
+  <rect width="1024" height="1024" rx="232" ry="232" fill="url(#bgGrad)"/>
+  <!-- Glass shimmer top half -->
+  <rect width="1024" height="512" rx="0" fill="url(#shimmer)"/>
+
+  <!-- ── Barbell ── -->
+
+  <!-- Left end collar -->
+  <rect x="116" y="448" width="44" height="128" rx="13" fill="rgba(255,255,255,0.65)"/>
+
+  <!-- Left outer plate (tallest, widest) -->
+  <rect x="160" y="370" width="76" height="284" rx="18" fill="url(#plateGrad)"/>
+
+  <!-- Left inner plate (shorter) -->
+  <rect x="236" y="422" width="50" height="180" rx="13" fill="rgba(255,255,255,0.78)"/>
+
+  <!-- Horizontal bar -->
+  <rect x="286" y="500" width="452" height="24" rx="12" fill="rgba(255,255,255,0.96)"/>
+
+  <!-- Right inner plate -->
+  <rect x="738" y="422" width="50" height="180" rx="13" fill="rgba(255,255,255,0.78)"/>
+
+  <!-- Right outer plate -->
+  <rect x="788" y="370" width="76" height="284" rx="18" fill="url(#plateGrad)"/>
+
+  <!-- Right end collar -->
+  <rect x="864" y="448" width="44" height="128" rx="13" fill="rgba(255,255,255,0.65)"/>
+
+  <!-- Subtle bottom shadow line for depth -->
+  <rect x="160" y="648" width="704" height="6" rx="3" fill="rgba(0,0,0,0.12)"/>
+</svg>

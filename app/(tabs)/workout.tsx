@@ -20,8 +20,7 @@ import { ExerciseCard } from '../../src/components/workout/ExerciseCard';
 import { WorkoutTimer } from '../../src/components/workout/WorkoutTimer';
 import { RestTimer } from '../../src/components/workout/RestTimer';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-import { Button } from '../../src/components/ui/Button';
-import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, TAB_BAR_HEIGHT, TAB_BAR_HEIGHT_ANDROID } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase } from '../../src/db';
 import { getLastSetDataForExercise } from '../../src/db/queries/sets';
@@ -93,10 +92,8 @@ export default function WorkoutScreen() {
           icon="barbell-outline"
           title="No Active Workout"
           subtitle="Start a workout to begin tracking your sets and reps."
-          actionLabel="Start Workout"
-          onAction={() => router.push('/workout/new')}
         />
-        <View style={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl }}>
+        <View style={{ paddingHorizontal: Spacing.base, paddingBottom: Platform.OS === 'ios' ? TAB_BAR_HEIGHT + Spacing.base : TAB_BAR_HEIGHT_ANDROID + Spacing.base }}>
           <TouchableOpacity
             onPress={() => router.push('/workout/new')}
             style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
@@ -288,8 +285,8 @@ export default function WorkoutScreen() {
             ))
           )}
 
-          {/* Bottom spacing for floating bar */}
-          <View style={{ height: 100 }} />
+          {/* Bottom spacing: tab bar (84) + floating bar (~80) + margin */}
+          <View style={{ height: Platform.OS === 'ios' ? 180 : 160 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -397,7 +394,7 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? TAB_BAR_HEIGHT : TAB_BAR_HEIGHT_ANDROID,
     left: 0,
     right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
