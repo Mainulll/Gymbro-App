@@ -83,4 +83,17 @@ export const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       CREATE INDEX IF NOT EXISTS idx_progress_photos_date ON progress_photos(date);
     `);
   },
+
+  // Migration 4: Micronutrients in calorie_entries
+  async (db: SQLiteDatabase) => {
+    const cols = [
+      'ALTER TABLE calorie_entries ADD COLUMN fiber_g REAL NOT NULL DEFAULT 0',
+      'ALTER TABLE calorie_entries ADD COLUMN sugar_g REAL NOT NULL DEFAULT 0',
+      'ALTER TABLE calorie_entries ADD COLUMN sodium_mg REAL NOT NULL DEFAULT 0',
+      'ALTER TABLE calorie_entries ADD COLUMN saturated_fat_g REAL NOT NULL DEFAULT 0',
+    ];
+    for (const sql of cols) {
+      try { await db.runAsync(sql); } catch { /* column may already exist */ }
+    }
+  },
 ];

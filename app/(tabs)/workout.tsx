@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutStore } from '../../src/store/workoutStore';
@@ -26,12 +26,14 @@ import { getDatabase } from '../../src/db';
 import { getLastSetDataForExercise } from '../../src/db/queries/sets';
 import { getVideosForExercise } from '../../src/db/queries/videos';
 import { ExerciseVideo } from '../../src/types';
-import { generateId } from '../../src/utils/uuid';
-import { createProgressPhoto } from '../../src/db/queries/photos';
-import { formatDateISO } from '../../src/utils/date';
-import * as ImagePicker from 'expo-image-picker';
 
 export default function WorkoutScreen() {
+  const insets = useSafeAreaInsets();
+  // Position bottom bar above the tab bar. Tab bar content is ~56px; add safe area inset.
+  const bottomBarBottom = Platform.OS === 'ios'
+    ? insets.bottom + 56
+    : TAB_BAR_HEIGHT_ANDROID;
+
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const { finishWorkout, discardWorkout, renameWorkout } = useWorkoutStore();
   const restTimerSeconds = useSettingsStore((s) => s.settings.restTimerSeconds);
@@ -113,75 +115,6 @@ export default function WorkoutScreen() {
     );
   }
 
-  async function promptProgressPhoto(workoutId: string) {
-    Alert.alert(
-      '📸 Progress Photo',
-      'Want to snap a progress photo to track your physique?',
-      [
-        {
-          text: 'Skip',
-          style: 'cancel',
-          onPress: () => router.push(`/workout/${workoutId}`),
-        },
-        {
-          text: 'Take Photo',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Camera access is required for progress photos.');
-              router.push(`/workout/${workoutId}`);
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: 'images',
-              quality: 0.8,
-              allowsEditing: false,
-            });
-            if (!result.canceled && result.assets[0]) {
-              const db = await getDatabase();
-              await createProgressPhoto(db, {
-                id: generateId(),
-                date: formatDateISO(new Date()),
-                localUri: result.assets[0].uri,
-                workoutSessionId: workoutId,
-                notes: '',
-                createdAt: new Date().toISOString(),
-              });
-            }
-            router.push(`/workout/${workoutId}`);
-          },
-        },
-        {
-          text: 'Choose from Library',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Photo library access is required.');
-              router.push(`/workout/${workoutId}`);
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: 'images',
-              quality: 0.8,
-            });
-            if (!result.canceled && result.assets[0]) {
-              const db = await getDatabase();
-              await createProgressPhoto(db, {
-                id: generateId(),
-                date: formatDateISO(new Date()),
-                localUri: result.assets[0].uri,
-                workoutSessionId: workoutId,
-                notes: '',
-                createdAt: new Date().toISOString(),
-              });
-            }
-            router.push(`/workout/${workoutId}`);
-          },
-        },
-      ],
-    );
-  }
-
   async function handleFinish() {
     Alert.alert(
       'Finish Workout',
@@ -193,7 +126,7 @@ export default function WorkoutScreen() {
           style: 'default',
           onPress: async () => {
             const id = await finishWorkout();
-            if (id) promptProgressPhoto(id);
+            if (id) router.push(`/workout/complete?id=${id}`);
           },
         },
       ],
@@ -285,13 +218,13 @@ export default function WorkoutScreen() {
             ))
           )}
 
-          {/* Bottom spacing: tab bar (84) + floating bar (~80) + margin */}
-          <View style={{ height: Platform.OS === 'ios' ? 180 : 160 }} />
+          {/* Bottom spacing: floating bar height (~72) + its bottom offset */}
+          <View style={{ height: bottomBarBottom + 80 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Floating bottom bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { bottom: bottomBarBottom }]}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.bottomBarInner}>
           <TouchableOpacity
@@ -394,12 +327,12 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? TAB_BAR_HEIGHT : TAB_BAR_HEIGHT_ANDROID,
     left: 0,
     right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255,255,255,0.10)',
     overflow: 'hidden',
+    zIndex: 50,
   },
   bottomBarInner: {
     flexDirection: 'row',

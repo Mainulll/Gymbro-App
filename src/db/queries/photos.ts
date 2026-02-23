@@ -34,6 +34,17 @@ export async function getProgressPhotosForDate(
   return rows.map(mapPhoto);
 }
 
+export async function getProgressPhotosForWorkout(
+  db: SQLiteDatabase,
+  workoutSessionId: string,
+): Promise<ProgressPhoto[]> {
+  const rows = await db.getAllAsync<any>(
+    'SELECT * FROM progress_photos WHERE workout_session_id = ? ORDER BY created_at ASC',
+    [workoutSessionId],
+  );
+  return rows.map(mapPhoto);
+}
+
 export async function deleteProgressPhoto(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM progress_photos WHERE id = ?', [id]);
 }

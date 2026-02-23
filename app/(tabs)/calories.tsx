@@ -75,6 +75,12 @@ export default function CaloriesScreen() {
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+  // Micronutrients
+  const [fiber, setFiber] = useState('');
+  const [sugar, setSugar] = useState('');
+  const [sodium, setSodium] = useState('');
+  const [saturatedFat, setSaturatedFat] = useState('');
+  const [showMicros, setShowMicros] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -89,6 +95,11 @@ export default function CaloriesScreen() {
         setProtein(prefill.protein ?? '');
         setCarbs(prefill.carbs ?? '');
         setFat(prefill.fat ?? '');
+        setFiber('');
+        setSugar('');
+        setSodium('');
+        setSaturatedFat('');
+        setShowMicros(false);
         setShowAddSheet(true);
       }
     }, [viewDate]),
@@ -113,6 +124,11 @@ export default function CaloriesScreen() {
     setProtein('');
     setCarbs('');
     setFat('');
+    setFiber('');
+    setSugar('');
+    setSodium('');
+    setSaturatedFat('');
+    setShowMicros(false);
     setShowAddSheet(true);
   }
 
@@ -129,6 +145,10 @@ export default function CaloriesScreen() {
       proteinG: parseFloat(protein) || 0,
       carbsG: parseFloat(carbs) || 0,
       fatG: parseFloat(fat) || 0,
+      fiberG: parseFloat(fiber) || 0,
+      sugarG: parseFloat(sugar) || 0,
+      sodiumMg: parseFloat(sodium) || 0,
+      saturatedFatG: parseFloat(saturatedFat) || 0,
       servingSize: 100,
       servingUnit: 'g',
     });
@@ -156,6 +176,10 @@ export default function CaloriesScreen() {
       proteinG: 0,
       carbsG: 0,
       fatG: 0,
+      fiberG: 0,
+      sugarG: 0,
+      sodiumMg: 0,
+      saturatedFatG: 0,
       servingSize: 1,
       servingUnit: 'serving',
     });
@@ -308,6 +332,15 @@ export default function CaloriesScreen() {
                             P {Math.round(entry.proteinG)}g · C {Math.round(entry.carbsG)}g · F {Math.round(entry.fatG)}g
                           </Text>
                         )}
+                        {(entry.fiberG > 0 || entry.sugarG > 0 || entry.sodiumMg > 0) && (
+                          <Text style={styles.entryMicros}>
+                            {entry.fiberG > 0 ? `Fiber ${Math.round(entry.fiberG)}g` : ''}
+                            {entry.fiberG > 0 && entry.sugarG > 0 ? ' · ' : ''}
+                            {entry.sugarG > 0 ? `Sugar ${Math.round(entry.sugarG)}g` : ''}
+                            {(entry.fiberG > 0 || entry.sugarG > 0) && entry.sodiumMg > 0 ? ' · ' : ''}
+                            {entry.sodiumMg > 0 ? `Na ${Math.round(entry.sodiumMg)}mg` : ''}
+                          </Text>
+                        )}
                       </View>
                       <Text style={styles.entryCals}>{Math.round(entry.calories)} kcal</Text>
                     </TouchableOpacity>
@@ -355,7 +388,7 @@ export default function CaloriesScreen() {
         visible={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         title={`Add to ${MEAL_LABELS[addMeal]}`}
-        snapHeight={520}
+        snapHeight={620}
       >
         <View style={styles.addForm}>
           {/* Barcode scan shortcut inside sheet */}
@@ -394,6 +427,33 @@ export default function CaloriesScreen() {
             <MacroInput label="Carbs (g)" value={carbs} onChange={setCarbs} />
             <MacroInput label="Fat (g)" value={fat} onChange={setFat} />
           </View>
+
+          {/* Micronutrients toggle */}
+          <TouchableOpacity
+            style={styles.microsToggle}
+            onPress={() => setShowMicros((v) => !v)}
+          >
+            <Text style={styles.microsToggleText}>Micronutrients (optional)</Text>
+            <Ionicons
+              name={showMicros ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={Colors.textMuted}
+            />
+          </TouchableOpacity>
+
+          {showMicros && (
+            <>
+              <View style={styles.formRow}>
+                <MacroInput label="Fiber (g)" value={fiber} onChange={setFiber} />
+                <MacroInput label="Sugar (g)" value={sugar} onChange={setSugar} />
+              </View>
+              <View style={styles.formRow}>
+                <MacroInput label="Sodium (mg)" value={sodium} onChange={setSodium} />
+                <MacroInput label="Sat. Fat (g)" value={saturatedFat} onChange={setSaturatedFat} />
+              </View>
+            </>
+          )}
+
           <TouchableOpacity style={styles.logBtn} onPress={handleAddEntry}>
             <Text style={styles.logBtnText}>Log Food</Text>
           </TouchableOpacity>
@@ -644,6 +704,30 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.xs,
     color: Colors.textMuted,
     marginTop: 1,
+  },
+  entryMicros: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+    opacity: 0.7,
+    marginTop: 1,
+  },
+  microsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  microsToggleText: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   entryCals: {
     fontSize: Typography.sizes.sm,

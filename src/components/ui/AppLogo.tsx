@@ -29,10 +29,6 @@ export function AppLogo({ size = 60, rounded = true }: AppLogoProps) {
           <Stop offset="55%" stopColor="#5A4FD6" />
           <Stop offset="100%" stopColor="#00C9B4" />
         </LinearGradient>
-        <LinearGradient id="gbShimmer" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-          <Stop offset="100%" stopColor="rgba(255,255,255,0.00)" />
-        </LinearGradient>
         <LinearGradient id="gbPlate" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0%" stopColor="rgba(255,255,255,1.00)" />
           <Stop offset="100%" stopColor="rgba(255,255,255,0.88)" />
@@ -41,8 +37,6 @@ export function AppLogo({ size = 60, rounded = true }: AppLogoProps) {
 
       {/* Background */}
       <Rect width="1024" height="1024" rx={rx} ry={rx} fill="url(#gbBg)" />
-      {/* Glass shimmer */}
-      <Rect width="1024" height="512" fill="url(#gbShimmer)" />
 
       {/* Barbell */}
       <G>

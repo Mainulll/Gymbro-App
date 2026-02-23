@@ -49,6 +49,7 @@ export default function RootLayout() {
           options={{
             title: 'Start Workout',
             presentation: 'modal',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.surface },
           }}
         />
@@ -56,6 +57,16 @@ export default function RootLayout() {
           name="workout/[id]"
           options={{
             title: 'Workout',
+            headerBackTitle: '',
+            headerStyle: { backgroundColor: Colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="workout/complete"
+          options={{
+            title: 'Workout Complete',
+            headerBackTitle: '',
+            headerLeft: () => null,
             headerStyle: { backgroundColor: Colors.background },
           }}
         />
@@ -64,6 +75,7 @@ export default function RootLayout() {
           options={{
             title: 'Add Exercise',
             presentation: 'modal',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.surface },
           }}
         />
@@ -71,6 +83,7 @@ export default function RootLayout() {
           name="exercise/[id]"
           options={{
             title: 'Exercise',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.background },
           }}
         />
@@ -86,6 +99,7 @@ export default function RootLayout() {
           options={{
             title: 'Export Data',
             presentation: 'modal',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.surface },
           }}
         />
@@ -100,6 +114,7 @@ export default function RootLayout() {
           name="health/index"
           options={{
             title: 'Health & Body',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.background },
           }}
         />

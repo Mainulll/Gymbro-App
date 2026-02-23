@@ -8,8 +8,9 @@ export async function createCalorieEntry(
   await db.runAsync(
     `INSERT INTO calorie_entries
        (id, date, meal_type, food_name, calories, protein_g, carbs_g, fat_g,
+        fiber_g, sugar_g, sodium_mg, saturated_fat_g,
         serving_size, serving_unit, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.id,
       entry.date,
@@ -19,6 +20,10 @@ export async function createCalorieEntry(
       entry.proteinG,
       entry.carbsG,
       entry.fatG,
+      entry.fiberG,
+      entry.sugarG,
+      entry.sodiumMg,
+      entry.saturatedFatG,
       entry.servingSize,
       entry.servingUnit,
       entry.createdAt,
@@ -109,6 +114,10 @@ function mapEntry(row: any): CalorieEntry {
     proteinG: row.protein_g,
     carbsG: row.carbs_g,
     fatG: row.fat_g,
+    fiberG: row.fiber_g ?? 0,
+    sugarG: row.sugar_g ?? 0,
+    sodiumMg: row.sodium_mg ?? 0,
+    saturatedFatG: row.saturated_fat_g ?? 0,
     servingSize: row.serving_size,
     servingUnit: row.serving_unit,
     createdAt: row.created_at,

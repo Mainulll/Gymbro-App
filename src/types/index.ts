@@ -98,6 +98,10 @@ export interface CalorieEntry {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  fiberG: number;
+  sugarG: number;
+  sodiumMg: number;
+  saturatedFatG: number;
   servingSize: number;
   servingUnit: string;
   createdAt: string;
