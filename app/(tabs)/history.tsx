@@ -19,7 +19,7 @@ import { getAllWorkoutSessions, deleteWorkoutSession, updateWorkoutSession, getW
 import { WorkoutSession, WorkoutExercise } from '../../src/types';
 import { HistoryCard } from '../../src/components/workout/HistoryCard';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { formatDateISO, getWeekStart, getWeekEnd } from '../../src/utils/date';
 import { format, isThisWeek, startOfWeek } from 'date-fns';
 
@@ -125,8 +125,12 @@ export default function HistoryScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>History</Text>
-        <TouchableOpacity onPress={() => router.push('/export')}>
-          <Ionicons name="share-outline" size={22} color={Colors.accent} />
+        <TouchableOpacity
+          onPress={() => router.push('/export')}
+          style={styles.exportBtn}
+        >
+          <Ionicons name="share-outline" size={16} color={Colors.teal} />
+          <Text style={styles.exportBtnText}>Export</Text>
         </TouchableOpacity>
       </View>
 
@@ -151,7 +155,11 @@ export default function HistoryScreen() {
           )}
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <View style={styles.sectionBadge}>
+                <Ionicons name="calendar-outline" size={12} color={Colors.accent} />
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
+              <Text style={styles.sectionCount}>{section.data.length} workout{section.data.length !== 1 ? 's' : ''}</Text>
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -235,20 +243,52 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
+  sectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.accentMuted,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
   sectionTitle: {
-    fontSize: Typography.sizes.sm,
+    fontSize: Typography.sizes.xs,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: Colors.accentLight,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
+  sectionCount: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+    backgroundColor: 'rgba(0, 217, 192, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 217, 192, 0.25)',
+  },
+  exportBtnText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+    color: Colors.teal,
+  },
   listContent: {
     paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: SCROLL_BOTTOM_PADDING,
   },
   // Edit modal styles
   modalOverlay: {

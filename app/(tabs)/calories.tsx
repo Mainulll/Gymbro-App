@@ -20,7 +20,8 @@ import { ProgressRing } from '../../src/components/ui/ProgressRing';
 import { ProgressBar } from '../../src/components/ui/ProgressBar';
 import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { formatDateISO } from '../../src/utils/date';
 import { consumePendingCaloriePrefill } from '../../src/utils/caloriePrefill';
 import { format, addDays, subDays } from 'date-fns';
@@ -31,6 +32,18 @@ const MEAL_LABELS: Record<MealType, string> = {
   lunch: 'Lunch',
   dinner: 'Dinner',
   snack: 'Snacks',
+};
+const MEAL_ICONS: Record<MealType, string> = {
+  breakfast: '☀️',
+  lunch: '🥗',
+  dinner: '🌙',
+  snack: '🍎',
+};
+const MEAL_COLORS: Record<MealType, string> = {
+  breakfast: Colors.amber,
+  lunch: Colors.teal,
+  dinner: Colors.coral,
+  snack: Colors.pink,
 };
 
 // Alcohol helpers — 7 kcal/g pure ethanol, ethanol density 0.789 g/ml
@@ -200,7 +213,7 @@ export default function CaloriesScreen() {
                 size={110}
                 strokeWidth={10}
                 progress={calorieProgress}
-                color={Colors.accent}
+                color={Colors.pink}
               >
                 <View style={styles.ringCenter}>
                   <Text style={styles.ringValue}>{Math.round(summary.totalCalories)}</Text>
@@ -250,9 +263,12 @@ export default function CaloriesScreen() {
             const mealEntries = entries.filter((e) => e.mealType === meal);
             const mealCals = mealEntries.reduce((sum, e) => sum + e.calories, 0);
             return (
-              <Card key={meal} style={styles.mealCard}>
+              <Card key={meal} style={styles.mealCard} accent={MEAL_COLORS[meal]}>
                 <View style={styles.mealHeader}>
-                  <Text style={styles.mealTitle}>{MEAL_LABELS[meal]}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                    <Text style={{ fontSize: 16 }}>{MEAL_ICONS[meal]}</Text>
+                    <Text style={[styles.mealTitle, { color: MEAL_COLORS[meal] }]}>{MEAL_LABELS[meal]}</Text>
+                  </View>
                   <View style={styles.mealHeaderRight}>
                     {mealCals > 0 && (
                       <Text style={styles.mealCals}>{Math.round(mealCals)} kcal</Text>
@@ -302,9 +318,12 @@ export default function CaloriesScreen() {
           })}
 
           {/* Alcohol tracker card */}
-          <Card style={styles.mealCard}>
+          <Card style={styles.mealCard} accent={Colors.mint}>
             <View style={styles.mealHeader}>
-              <Text style={styles.mealTitle}>🍻 Alcohol</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <Text style={{ fontSize: 16 }}>🍻</Text>
+                <Text style={[styles.mealTitle, { color: Colors.mint }]}>Alcohol</Text>
+              </View>
               <TouchableOpacity
                 style={styles.addMealBtn}
                 onPress={() => setShowAlcoholSheet(true)}
@@ -327,7 +346,7 @@ export default function CaloriesScreen() {
             </View>
           </Card>
 
-          <View style={{ height: Spacing.xl }} />
+          <View style={{ height: SCROLL_BOTTOM_PADDING }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -693,7 +712,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceElevated,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(78, 203, 113, 0.25)',
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     alignItems: 'center',

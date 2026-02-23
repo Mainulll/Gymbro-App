@@ -19,7 +19,7 @@ import { useSettingsStore } from '../../src/store/settingsStore';
 import { BodyWeightLog, SleepLog, ProgressPhoto } from '../../src/types';
 import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { toDisplayWeightNumber } from '../../src/constants/units';
 import { formatDateISO } from '../../src/utils/date';
 import { format } from 'date-fns';
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: Colors.accent },
   tabText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textMuted },
   tabTextActive: { color: Colors.textPrimary },
-  content: { padding: Spacing.base, paddingTop: 0, gap: Spacing.md, paddingBottom: Spacing.xxxl },
+  content: { padding: Spacing.base, paddingTop: 0, gap: Spacing.md, paddingBottom: SCROLL_BOTTOM_PADDING },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

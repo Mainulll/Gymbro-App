@@ -41,8 +41,8 @@ export function BottomSheet({
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
-          tension: 60,
-          friction: 12,
+          tension: 65,
+          friction: 11,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -55,7 +55,7 @@ export function BottomSheet({
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
-          duration: 250,
+          duration: 280,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -69,19 +69,25 @@ export function BottomSheet({
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
+      {/* Blurred backdrop */}
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+      </Animated.View>
+
+      {/* Tap-to-dismiss */}
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+      </Animated.View>
+
+      {/* Sheet */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.kavContainer}
+        pointerEvents="box-none"
       >
-        {/* Blurred backdrop */}
-        <Animated.View style={[styles.backdropContainer, { opacity: opacityAnim }]}>
-          <TouchableWithoutFeedback onPress={onClose}>
-            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          </TouchableWithoutFeedback>
-          <Animated.View style={[styles.backdropDim, { opacity: opacityAnim }]} pointerEvents="none" />
-        </Animated.View>
-
-        {/* Sheet */}
         <Animated.View
           style={[
             styles.sheet,
@@ -89,9 +95,9 @@ export function BottomSheet({
             { transform: [{ translateY: slideAnim }] },
           ]}
         >
-          {/* Glass gradient top highlight */}
+          {/* Top glass highlight */}
           <LinearGradient
-            colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.01)']}
+            colors={['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.01)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.glassHighlight}
@@ -99,14 +105,20 @@ export function BottomSheet({
           />
 
           <View style={styles.handle} />
+
           {title && (
             <View style={styles.header}>
               <Text style={styles.title}>{title}</Text>
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={styles.closeBtn}>Done</Text>
+              <TouchableOpacity
+                onPress={onClose}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.doneBtn}
+              >
+                <Text style={styles.doneBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           )}
+
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -121,26 +133,20 @@ export function BottomSheet({
 }
 
 const styles = StyleSheet.create({
-  backdropContainer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  backdropDim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+  kavContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    pointerEvents: 'box-none',
   },
   sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingBottom: 34,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingBottom: 40,
     overflow: 'hidden',
   },
   glassHighlight: {
@@ -148,16 +154,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 80,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    pointerEvents: 'none',
+    height: 90,
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
   },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     alignSelf: 'center',
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
@@ -173,13 +178,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: Typography.sizes.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
-  closeBtn: {
-    fontSize: Typography.sizes.base,
-    color: Colors.accent,
-    fontWeight: '600',
+  doneBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: Colors.accentMuted,
+    borderRadius: Radius.sm,
+  },
+  doneBtnText: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.accentLight,
+    fontWeight: '700',
   },
   content: {
     padding: Spacing.base,

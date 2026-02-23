@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../src/constants/theme';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];

@@ -21,7 +21,8 @@ import { WorkoutTimer } from '../../src/components/workout/WorkoutTimer';
 import { RestTimer } from '../../src/components/workout/RestTimer';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { Button } from '../../src/components/ui/Button';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase } from '../../src/db';
 import { getLastSetDataForExercise } from '../../src/db/queries/sets';
 import { getVideosForExercise } from '../../src/db/queries/videos';
@@ -95,6 +96,22 @@ export default function WorkoutScreen() {
           actionLabel="Start Workout"
           onAction={() => router.push('/workout/new')}
         />
+        <View style={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl }}>
+          <TouchableOpacity
+            onPress={() => router.push('/workout/new')}
+            style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
+          >
+            <LinearGradient
+              colors={[Colors.accent, Colors.teal]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bigStartBtn}
+            >
+              <Ionicons name="barbell" size={22} color="white" />
+              <Text style={styles.bigStartBtnText}>Start New Workout</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -278,22 +295,32 @@ export default function WorkoutScreen() {
 
       {/* Floating bottom bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.addExerciseBtn}
-          onPress={() =>
-            router.push({
-              pathname: '/exercise/select',
-              params: { sessionId: activeWorkout.sessionId },
-            })
-          }
-        >
-          <Ionicons name="add" size={20} color={Colors.textPrimary} />
-          <Text style={styles.addExerciseText}>Add Exercise</Text>
-        </TouchableOpacity>
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.bottomBarInner}>
+          <TouchableOpacity
+            style={styles.addExerciseBtn}
+            onPress={() =>
+              router.push({
+                pathname: '/exercise/select',
+                params: { sessionId: activeWorkout.sessionId },
+              })
+            }
+          >
+            <Ionicons name="add" size={20} color={Colors.textPrimary} />
+            <Text style={styles.addExerciseText}>Add Exercise</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.finishBtn} onPress={handleFinish}>
-          <Text style={styles.finishText}>Finish</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.finishBtn} onPress={handleFinish}>
+            <LinearGradient
+              colors={[Colors.accent, Colors.accentDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.finishGrad}
+            >
+              <Text style={styles.finishText}>Finish</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Rest Timer */}
@@ -373,14 +400,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.10)',
+    overflow: 'hidden',
+  },
+  bottomBarInner: {
     flexDirection: 'row',
     gap: Spacing.sm,
     padding: Spacing.base,
     paddingBottom: Spacing.lg,
-    backgroundColor: 'rgba(10,10,10,0.8)',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
   },
   addExerciseBtn: {
     flex: 1,
@@ -388,11 +416,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: Radius.md,
     paddingVertical: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   addExerciseText: {
     fontSize: Typography.sizes.base,
@@ -400,10 +428,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   finishBtn: {
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+  },
+  finishGrad: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -411,5 +441,18 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.base,
     fontWeight: '700',
     color: Colors.textPrimary,
+  },
+  bigStartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.lg,
+    borderRadius: Radius.lg,
+  },
+  bigStartBtnText: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '700',
+    color: 'white',
   },
 });

@@ -8,17 +8,25 @@ interface CardProps {
   style?: ViewStyle;
   elevated?: boolean;
   glass?: boolean;
+  accent?: string;   // optional left-border accent color
   padding?: number;
 }
 
-export function Card({ children, style, elevated = false, glass = false, padding = Spacing.base }: CardProps) {
+export function Card({
+  children,
+  style,
+  elevated = false,
+  glass = false,
+  accent,
+  padding = Spacing.base,
+}: CardProps) {
   if (glass) {
     return (
-      <View style={[styles.glassOuter, style]}>
+      <View style={[styles.glassOuter, accent ? { borderLeftColor: accent, borderLeftWidth: 2 } : null, style]}>
         <LinearGradient
           colors={['rgba(255,255,255,0.09)', 'rgba(255,255,255,0.03)']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 1, y: 1.5 }}
           style={[styles.glassInner, { padding }]}
         >
           {children}
@@ -32,6 +40,7 @@ export function Card({ children, style, elevated = false, glass = false, padding
       style={[
         styles.card,
         elevated && styles.elevated,
+        accent ? { borderLeftColor: accent, borderLeftWidth: 2 } : null,
         { padding },
         style,
       ]}
@@ -50,17 +59,18 @@ const styles = StyleSheet.create({
   },
   elevated: {
     backgroundColor: Colors.surfaceElevated,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   glassOuter: {
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
-    shadowColor: Colors.accent,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 5,
   },
   glassInner: {
     borderRadius: Radius.lg,

@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { Card } from '../../src/components/ui/Card';
 import { Divider } from '../../src/components/ui/Divider';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { ActivityLevel, GoalType, Sex } from '../../src/types';
 import {
   calcTDEE,
@@ -73,7 +73,12 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Profile</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Profile</Text>
+          <View style={styles.titleBadge}>
+            <Ionicons name="person" size={14} color={Colors.accent} />
+          </View>
+        </View>
 
         {/* Body Stats */}
         <SectionHeader label="Body Stats" />
@@ -285,6 +290,7 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <NavRow
             icon="fitness-outline"
+            iconColor={Colors.teal}
             label="Body Weight & Sleep Log"
             onPress={() => router.push('/health')}
           />
@@ -295,6 +301,7 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <NavRow
             icon="share-outline"
+            iconColor={Colors.mint}
             label="Export Weekly Data"
             onPress={() => router.push('/export')}
           />
@@ -309,7 +316,7 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        <View style={{ height: Spacing.xl }} />
+        <View style={{ height: SCROLL_BOTTOM_PADDING }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -356,16 +363,20 @@ function GoalInput({
 
 function NavRow({
   icon,
+  iconColor,
   label,
   onPress,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
+  iconColor?: string;
   label: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress}>
-      <Ionicons name={icon} size={18} color={Colors.textSecondary} />
+      <View style={[styles.navIconWrap, iconColor ? { backgroundColor: `${iconColor}20` } : null]}>
+        <Ionicons name={icon} size={16} color={iconColor ?? Colors.textSecondary} />
+      </View>
       <Text style={[styles.rowLabel, { flex: 1 }]}>{label}</Text>
       <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
     </TouchableOpacity>
@@ -375,11 +386,26 @@ function NavRow({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, gap: Spacing.sm },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
   title: {
     fontSize: Typography.sizes.xxl,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+  },
+  titleBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124,111,255,0.3)',
   },
   sectionHeader: {
     fontSize: Typography.sizes.xs,
@@ -503,4 +529,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   goalUnit: { fontSize: Typography.sizes.sm, color: Colors.textMuted, minWidth: 28 },
+  navIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surfaceElevated,
+  },
 });
