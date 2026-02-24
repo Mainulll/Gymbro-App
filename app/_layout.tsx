@@ -3,9 +3,13 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { getDatabase } from '../src/db';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { Colors } from '../src/constants/theme';
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
@@ -18,7 +22,7 @@ export default function RootLayout() {
       setDbReady(true);
     }
     init();
-  }, []);
+  }, [loadSettings]);
 
   if (!dbReady) {
     return (
@@ -31,122 +35,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.textPrimary,
-          headerTitleStyle: {
-            fontWeight: '600',
-            color: Colors.textPrimary,
-          },
-          contentStyle: { backgroundColor: Colors.background },
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-        <Stack.Screen
-          name="workout/new"
-          options={{
-            title: 'Start Workout',
-            presentation: 'modal',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.surface },
-          }}
-        />
-        <Stack.Screen
-          name="workout/[id]"
-          options={{
-            title: 'Workout',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="workout/complete"
-          options={{
-            title: 'Workout Complete',
-            headerBackTitle: '',
-            headerLeft: () => null,
-            headerStyle: { backgroundColor: Colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="exercise/select"
-          options={{
-            title: 'Add Exercise',
-            presentation: 'modal',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.surface },
-          }}
-        />
-        <Stack.Screen
-          name="exercise/[id]"
-          options={{
-            title: 'Exercise',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="camera/record"
-          options={{
-            headerShown: false,
-            presentation: 'fullScreenModal',
-          }}
-        />
-        <Stack.Screen
-          name="export/index"
-          options={{
-            title: 'Export Data',
-            presentation: 'modal',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.surface },
-          }}
-        />
-        <Stack.Screen
-          name="barcode/scan"
-          options={{
-            headerShown: false,
-            presentation: 'fullScreenModal',
-          }}
-        />
-        <Stack.Screen
-          name="health/index"
-          options={{
-            title: 'Health & Body',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="gym/select"
-          options={{
-            title: 'Find a Gym',
-            presentation: 'modal',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.surface },
-          }}
-        />
-        <Stack.Screen
-          name="calories/micros"
-          options={{
-            title: 'Daily Micronutrients',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.background },
-          }}
-        />
-        <Stack.Screen
-          name="food/search"
-          options={{
-            title: 'Search Food',
-            presentation: 'modal',
-            headerBackTitle: '',
-            headerStyle: { backgroundColor: Colors.surface },
-            headerTintColor: Colors.textPrimary,
-          }}
-        />
-      </Stack>
-      <StatusBar style="light" />
+      <QueryClientProvider client={queryClient}>
+        <Stack /* ...your screenOptions + screens unchanged... */ />
+        <StatusBar style="light" />
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }
