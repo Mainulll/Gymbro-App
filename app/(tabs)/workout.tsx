@@ -29,10 +29,10 @@ import { ExerciseVideo } from '../../src/types';
 
 export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
-  // Position bottom bar above the tab bar. Tab bar content is ~56px; add safe area inset.
+  // Position bottom bar above the tab bar.
   const bottomBarBottom = Platform.OS === 'ios'
-    ? insets.bottom + 56
-    : TAB_BAR_HEIGHT_ANDROID;
+    ? TAB_BAR_HEIGHT          // 84 — defined in theme, includes iOS safe area
+    : TAB_BAR_HEIGHT_ANDROID + insets.bottom;
 
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const { finishWorkout, discardWorkout, renameWorkout } = useWorkoutStore();

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BodyWeightLog, SleepLog } from '../types';
+import { BodyWeightLog, SleepLog, MoodLog } from '../types';
 import { getDatabase } from '../db';
 import { generateId } from '../utils/uuid';
 import {
@@ -9,12 +9,16 @@ import {
   createSleepLog,
   getSleepLogs,
   deleteSleepLog,
+  createMoodLog,
+  getMoodLogs,
+  deleteMoodLog,
 } from '../db/queries/health';
 import { formatDateISO } from '../utils/date';
 
 interface HealthStore {
   weightLogs: BodyWeightLog[];
   sleepLogs: SleepLog[];
+  moodLogs: MoodLog[];
   isLoaded: boolean;
 
   load: () => Promise<void>;
@@ -29,20 +33,24 @@ interface HealthStore {
     notes?: string;
   }) => Promise<void>;
   removeSleepLog: (id: string) => Promise<void>;
+  logMood: (mood: 1 | 2 | 3 | 4 | 5, notes?: string) => Promise<void>;
+  removeMoodLog: (id: string) => Promise<void>;
 }
 
 export const useHealthStore = create<HealthStore>((set, get) => ({
   weightLogs: [],
   sleepLogs: [],
+  moodLogs: [],
   isLoaded: false,
 
   load: async () => {
     const db = await getDatabase();
-    const [weightLogs, sleepLogs] = await Promise.all([
+    const [weightLogs, sleepLogs, moodLogs] = await Promise.all([
       getBodyWeightLogs(db, 90),
       getSleepLogs(db, 30),
+      getMoodLogs(db, 30),
     ]);
-    set({ weightLogs, sleepLogs, isLoaded: true });
+    set({ weightLogs, sleepLogs, moodLogs, isLoaded: true });
   },
 
   logWeight: async (weightKg, bodyFatPct, notes = '') => {
@@ -85,5 +93,26 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
     const db = await getDatabase();
     await deleteSleepLog(db, id);
     set((s) => ({ sleepLogs: s.sleepLogs.filter((l) => l.id !== id) }));
+  },
+
+  logMood: async (mood, notes = '') => {
+    const db = await getDatabase();
+    const now = new Date();
+    const log: MoodLog = {
+      id: generateId(),
+      date: formatDateISO(now),
+      time: now.toTimeString().slice(0, 5), // HH:MM
+      mood,
+      notes,
+      createdAt: now.toISOString(),
+    };
+    await createMoodLog(db, log);
+    set((s) => ({ moodLogs: [log, ...s.moodLogs] }));
+  },
+
+  removeMoodLog: async (id) => {
+    const db = await getDatabase();
+    await deleteMoodLog(db, id);
+    set((s) => ({ moodLogs: s.moodLogs.filter((l) => l.id !== id) }));
   },
 }));

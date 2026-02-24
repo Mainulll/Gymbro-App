@@ -22,12 +22,18 @@ import { WorkoutSession, ProgressPhoto } from '../../src/types';
 import { generateId } from '../../src/utils/uuid';
 import { formatDateISO, formatDurationMinutes } from '../../src/utils/date';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { useSettingsStore } from '../../src/store/settingsStore';
+import { checkInToGym, getTodayCheckinCount, hasCheckedInToday, buildGymId } from '../../src/utils/gymCommunity';
+import { OSMGym } from '../../src/utils/overpass';
 
 export default function WorkoutCompleteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const settings = useSettingsStore((s) => s.settings);
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [gymCount, setGymCount] = useState<number | null>(null);
+  const [checkedIn, setCheckedIn] = useState(false);
 
   useEffect(() => {
     if (id) loadData(id);
@@ -42,6 +48,29 @@ export default function WorkoutCompleteScreen() {
     }
     const p = await getProgressPhotosForWorkout(db, workoutId);
     setPhotos(p);
+
+    // Load gym community data for home gym
+    if (settings.homeGymId) {
+      const gymId = buildGymId(settings.homeGymId);
+      const [count, alreadyCheckedIn] = await Promise.all([
+        getTodayCheckinCount(gymId),
+        hasCheckedInToday(gymId),
+      ]).catch(() => [null, false] as [null, boolean]);
+      setGymCount(count);
+      setCheckedIn(alreadyCheckedIn);
+    }
+  }
+
+  async function handleHomeGymCheckIn() {
+    if (!settings.homeGymId || !settings.homeGymName) return;
+    const gym: OSMGym = {
+      osmId: settings.homeGymId,
+      name: settings.homeGymName,
+      lat: settings.homeGymLat ?? 0,
+      lng: settings.homeGymLng ?? 0,
+    };
+    await checkInToGym(gym).catch(() => {});
+    setCheckedIn(true);
   }
 
   async function pickPhoto(source: 'camera' | 'library') {
@@ -144,6 +173,46 @@ export default function WorkoutCompleteScreen() {
               keyboardAppearance="dark"
               textAlignVertical="top"
             />
+          </View>
+
+          {/* Gym Check-In */}
+          <Text style={styles.sectionLabel}>Where did you train?</Text>
+          <View style={styles.gymCheckinCard}>
+            {settings.homeGymName ? (
+              <View style={styles.gymCheckinRow}>
+                <View style={styles.gymCheckinLeft}>
+                  <View style={styles.gymIconBadge}>
+                    <Ionicons name="location" size={16} color={Colors.teal} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.gymCheckinName} numberOfLines={1}>{settings.homeGymName}</Text>
+                    {checkedIn ? (
+                      <Text style={[styles.gymCheckinCount, { color: Colors.mint }]}>
+                        You trained here today ✓
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.checkInBtn, checkedIn && styles.checkInBtnDone]}
+                  onPress={handleHomeGymCheckIn}
+                  disabled={checkedIn}
+                >
+                  <Ionicons name={checkedIn ? 'checkmark' : 'location-outline'} size={14} color="white" />
+                  <Text style={styles.checkInBtnText}>{checkedIn ? 'Checked In' : 'Check In'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={styles.differentGymBtn}
+              onPress={() => router.push('/gym/select?checkIn=true')}
+            >
+              <Ionicons name="search-outline" size={14} color={Colors.textSecondary} />
+              <Text style={styles.differentGymText}>
+                {settings.homeGymName ? 'Trained somewhere else?' : 'Find & check in to a gym'}
+              </Text>
+              <Ionicons name="chevron-forward" size={13} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
 
           {/* Progress photos */}
@@ -311,6 +380,76 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  gymCheckinCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  gymCheckinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  gymCheckinLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  gymIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.tealMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gymCheckinName: {
+    fontSize: Typography.sizes.base,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  gymCheckinCount: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.teal,
+    marginTop: 1,
+  },
+  checkInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.teal,
+  },
+  checkInBtnDone: {
+    backgroundColor: Colors.mint,
+    opacity: 0.8,
+  },
+  checkInBtnText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '700',
+    color: 'white',
+  },
+  differentGymBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  differentGymText: {
+    flex: 1,
+    fontSize: Typography.sizes.sm,
+    color: Colors.textSecondary,
   },
   footer: {
     padding: Spacing.base,

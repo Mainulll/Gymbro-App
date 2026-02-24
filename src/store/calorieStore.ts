@@ -1,13 +1,15 @@
 import { create } from 'zustand';
-import { CalorieEntry, DailyNutritionSummary, MealType } from '../types';
+import { CalorieEntry, DailyNutritionSummary, DailyMicroSummary } from '../types';
 import { getDatabase } from '../db';
 import {
   getCalorieEntriesForDate,
   getDailyNutritionSummary,
+  getDailyMicroSummary,
   createCalorieEntry,
   deleteCalorieEntry,
   updateCalorieEntry,
 } from '../db/queries/calories';
+import { emptyMicroSummary } from '../constants/micronutrients';
 import { formatDateISO } from '../utils/date';
 import { generateId } from '../utils/uuid';
 
@@ -15,6 +17,7 @@ interface CalorieStore {
   currentDate: string;
   entries: CalorieEntry[];
   summary: DailyNutritionSummary;
+  microSummary: DailyMicroSummary;
   isLoading: boolean;
 
   loadDay: (date?: string) => Promise<void>;
@@ -36,17 +39,19 @@ export const useCalorieStore = create<CalorieStore>((set, get) => ({
   currentDate: formatDateISO(new Date()),
   entries: [],
   summary: emptySummary(formatDateISO(new Date())),
+  microSummary: emptyMicroSummary(formatDateISO(new Date())),
   isLoading: false,
 
   loadDay: async (date?: string) => {
     const targetDate = date ?? formatDateISO(new Date());
     set({ isLoading: true, currentDate: targetDate });
     const db = await getDatabase();
-    const [entries, summary] = await Promise.all([
+    const [entries, summary, microSummary] = await Promise.all([
       getCalorieEntriesForDate(db, targetDate),
       getDailyNutritionSummary(db, targetDate),
+      getDailyMicroSummary(db, targetDate),
     ]);
-    set({ entries, summary, isLoading: false });
+    set({ entries, summary, microSummary, isLoading: false });
   },
 
   addEntry: async (entry) => {
@@ -69,7 +74,18 @@ export const useCalorieStore = create<CalorieStore>((set, get) => ({
         totalFatG: s.summary.totalFatG + newEntry.fatG,
         entryCount: s.summary.entryCount + 1,
       };
-      return { entries, summary };
+      const microSummary: DailyMicroSummary = {
+        ...s.microSummary,
+        vitaminDMcg: s.microSummary.vitaminDMcg + (newEntry.vitaminDMcg ?? 0),
+        vitaminB12Mcg: s.microSummary.vitaminB12Mcg + (newEntry.vitaminB12Mcg ?? 0),
+        vitaminCMg: s.microSummary.vitaminCMg + (newEntry.vitaminCMg ?? 0),
+        ironMg: s.microSummary.ironMg + (newEntry.ironMg ?? 0),
+        calciumMg: s.microSummary.calciumMg + (newEntry.calciumMg ?? 0),
+        magnesiumMg: s.microSummary.magnesiumMg + (newEntry.magnesiumMg ?? 0),
+        potassiumMg: s.microSummary.potassiumMg + (newEntry.potassiumMg ?? 0),
+        zincMg: s.microSummary.zincMg + (newEntry.zincMg ?? 0),
+      };
+      return { entries, summary, microSummary };
     });
   },
 
@@ -97,7 +113,7 @@ export const useCalorieStore = create<CalorieStore>((set, get) => ({
   editEntry: async (id: string, updates: Partial<CalorieEntry>) => {
     const db = await getDatabase();
     await updateCalorieEntry(db, id, updates);
-    // Reload the day to recalculate summary correctly
+    // Reload the day to recalculate all summaries correctly
     await get().loadDay(get().currentDate);
   },
 }));

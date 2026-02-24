@@ -442,6 +442,18 @@ export default function ProfileScreen() {
           />
         </Card>
 
+        {/* ── Community ── */}
+        <SectionHeader label="Community" />
+        <Card style={styles.card}>
+          <NavRow
+            icon="location-outline"
+            iconColor={Colors.teal}
+            label="Home Gym"
+            sublabel={settings.homeGymName || 'Tap to set your home gym'}
+            onPress={() => router.push('/gym/select')}
+          />
+        </Card>
+
         {/* ── Data ── */}
         <SectionHeader label="Data" />
         <Card style={styles.card}>

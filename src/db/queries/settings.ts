@@ -21,6 +21,10 @@ export async function getUserSettings(db: SQLiteDatabase): Promise<UserSettings>
       targetWeightKg: null,
       activityLevel: 'moderately_active',
       goalType: 'maintain',
+      homeGymId: null,
+      homeGymName: null,
+      homeGymLat: null,
+      homeGymLng: null,
     };
   }
   return {
@@ -40,6 +44,10 @@ export async function getUserSettings(db: SQLiteDatabase): Promise<UserSettings>
     targetWeightKg: row.target_weight_kg ?? null,
     activityLevel: (row.activity_level ?? 'moderately_active') as UserSettings['activityLevel'],
     goalType: (row.goal_type ?? 'maintain') as UserSettings['goalType'],
+    homeGymId: row.home_gym_id ?? null,
+    homeGymName: row.home_gym_name ?? null,
+    homeGymLat: row.home_gym_lat ?? null,
+    homeGymLng: row.home_gym_lng ?? null,
   };
 }
 
@@ -66,6 +74,10 @@ export async function updateUserSettings(
   if (settings.targetWeightKg !== undefined) { fields.push('target_weight_kg = ?'); values.push(settings.targetWeightKg); }
   if (settings.activityLevel !== undefined) { fields.push('activity_level = ?'); values.push(settings.activityLevel); }
   if (settings.goalType !== undefined) { fields.push('goal_type = ?'); values.push(settings.goalType); }
+  if (settings.homeGymId !== undefined) { fields.push('home_gym_id = ?'); values.push(settings.homeGymId); }
+  if (settings.homeGymName !== undefined) { fields.push('home_gym_name = ?'); values.push(settings.homeGymName); }
+  if (settings.homeGymLat !== undefined) { fields.push('home_gym_lat = ?'); values.push(settings.homeGymLat); }
+  if (settings.homeGymLng !== undefined) { fields.push('home_gym_lng = ?'); values.push(settings.homeGymLng); }
 
   if (fields.length === 0) return;
   values.push(1);

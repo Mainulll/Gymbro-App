@@ -1,5 +1,6 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 import { WorkoutSet } from '../../types';
+import { SessionSetHistory, SetWithEstimate, calcEpley1RM } from '../../constants/progressionInsights';
 
 export async function createWorkoutSet(
   db: SQLiteDatabase,
@@ -116,6 +117,73 @@ export async function getExportSets(
      ORDER BY ws.started_at ASC, we.order_index ASC, wset.set_number ASC`,
     [startDate, endDate],
   );
+}
+
+export async function getSetHistoryForExercise(
+  db: SQLiteDatabase,
+  exerciseTemplateId: string,
+  limit = 5,
+): Promise<SessionSetHistory[]> {
+  // Step 1: Get N most recent completed sessions for this exercise
+  const sessions = await db.getAllAsync<any>(
+    `SELECT DISTINCT ws.id, ws.started_at, ws.name
+     FROM workout_exercises we
+     JOIN workout_sessions ws ON we.workout_id = ws.id
+     WHERE we.exercise_template_id = ? AND ws.finished_at IS NOT NULL
+     ORDER BY ws.started_at DESC
+     LIMIT ?`,
+    [exerciseTemplateId, limit],
+  );
+
+  const result: SessionSetHistory[] = [];
+
+  for (const sess of sessions) {
+    // Step 2: Get all completed working sets for this session
+    const setRows = await db.getAllAsync<any>(
+      `SELECT wset.id, wset.set_number, wset.weight_kg, wset.reps,
+              wset.rpe, wset.is_warmup
+       FROM workout_sets wset
+       JOIN workout_exercises we ON wset.workout_exercise_id = we.id
+       WHERE we.workout_id = ? AND we.exercise_template_id = ?
+         AND wset.is_completed = 1
+       ORDER BY wset.set_number ASC`,
+      [sess.id, exerciseTemplateId],
+    );
+
+    const sets: SetWithEstimate[] = setRows.map((r: any) => {
+      const weightKg = r.weight_kg ?? 0;
+      const reps = r.reps ?? 0;
+      return {
+        setId: r.id,
+        setNumber: r.set_number,
+        weightKg,
+        reps,
+        rpe: r.rpe ?? null,
+        isWarmup: r.is_warmup === 1,
+        estimated1RM: calcEpley1RM(weightKg, reps),
+      };
+    });
+
+    const workingSets = sets.filter((s) => !s.isWarmup);
+    const maxWeightKg = workingSets.reduce((m, s) => Math.max(m, s.weightKg), 0);
+    const totalVolumeKg = workingSets.reduce((t, s) => t + s.weightKg * s.reps, 0);
+    const best1RM = workingSets.reduce((m: number | null, s) => {
+      if (s.estimated1RM === null) return m;
+      return m === null || s.estimated1RM > m ? s.estimated1RM : m;
+    }, null);
+
+    result.push({
+      sessionId: sess.id,
+      sessionDate: sess.started_at,
+      sessionName: sess.name,
+      sets,
+      maxWeightKg,
+      best1RM,
+      totalVolumeKg,
+    });
+  }
+
+  return result;
 }
 
 function mapSet(row: any): WorkoutSet {

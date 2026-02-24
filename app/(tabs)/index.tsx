@@ -12,13 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Rect, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Polyline, Rect, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { getDatabase } from '../../src/db';
+import { getTodayCheckinCount, buildGymId } from '../../src/utils/gymCommunity';
 import { getAllWorkoutSessions, getWeeklyStats } from '../../src/db/queries/workouts';
 import { getDailyNutritionSummary } from '../../src/db/queries/calories';
-import { WorkoutSession } from '../../src/types';
+import { WorkoutSession, BodyWeightLog, SleepLog } from '../../src/types';
 import { useWorkoutStore } from '../../src/store/workoutStore';
 import { useSettingsStore } from '../../src/store/settingsStore';
+import { useHealthStore } from '../../src/store/healthStore';
 import { ProgressRing } from '../../src/components/ui/ProgressRing';
 import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import {
@@ -38,11 +40,13 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 export default function HomeScreen() {
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const settings = useSettingsStore((s) => s.settings);
+  const { weightLogs, sleepLogs, moodLogs, isLoaded: healthLoaded, load: loadHealth, logMood, removeMoodLog } = useHealthStore();
 
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [weekStats, setWeekStats] = useState({ workoutCount: 0, totalVolumeKg: 0, streak: 0 });
   const [todayCalories, setTodayCalories] = useState({ totalCalories: 0 });
   const [weekDayVolumes, setWeekDayVolumes] = useState<number[]>(Array(7).fill(0));
+  const [homeGymCount, setHomeGymCount] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,6 +70,14 @@ export default function HomeScreen() {
     setWeekStats(stats);
     setTodayCalories({ totalCalories: calories.totalCalories });
 
+    // Load home gym community count
+    const { homeGymId } = settings;
+    if (homeGymId) {
+      getTodayCheckinCount(buildGymId(homeGymId)).then(setHomeGymCount).catch(() => {});
+    } else {
+      setHomeGymCount(null);
+    }
+
     const weekDates = getWeekDates(getWeekStart());
     const volumes = await Promise.all(
       weekDates.map(async (d) => {
@@ -76,6 +88,9 @@ export default function HomeScreen() {
       }),
     );
     setWeekDayVolumes(volumes);
+
+    // Load health data non-blocking
+    if (!healthLoaded) loadHealth();
   }
 
   const calorieProgress = todayCalories.totalCalories / settings.dailyCalorieGoal;
@@ -192,6 +207,78 @@ export default function HomeScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
+        {/* Home Gym Widget */}
+        {settings.homeGymName && (
+          <TouchableOpacity
+            style={styles.gymWidget}
+            onPress={() => router.push('/gym/select?checkIn=true')}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['rgba(0,217,192,0.18)', 'rgba(0,217,192,0.06)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gymWidgetGrad}
+            >
+              <View style={[styles.gymWidgetIcon, { backgroundColor: Colors.tealMuted }]}>
+                <Ionicons name="location" size={18} color={Colors.teal} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gymWidgetName} numberOfLines={1}>{settings.homeGymName}</Text>
+                <Text style={styles.gymWidgetCount}>
+                  {homeGymCount === 1
+                    ? 'You trained here today ✓'
+                    : 'Tap to check in →'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.teal} />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Weight mini-chart */}
+        {weightLogs.length >= 1 && (
+          <TouchableOpacity
+            style={styles.miniCard}
+            onPress={() => router.push('/health/index')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.miniCardHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <Ionicons name="scale-outline" size={14} color={Colors.accent} />
+                <Text style={styles.miniCardTitle}>Weight</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={13} color={Colors.textMuted} />
+            </View>
+            <WeightMiniChart logs={weightLogs.slice(0, 14).reverse()} />
+          </TouchableOpacity>
+        )}
+
+        {/* Sleep mini-chart */}
+        {sleepLogs.length >= 1 && (
+          <TouchableOpacity
+            style={styles.miniCard}
+            onPress={() => router.push('/health/index')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.miniCardHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                <Ionicons name="moon-outline" size={14} color={Colors.accent} />
+                <Text style={styles.miniCardTitle}>Sleep</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={13} color={Colors.textMuted} />
+            </View>
+            <SleepMiniChart logs={sleepLogs} />
+          </TouchableOpacity>
+        )}
+
+        {/* Mood widget */}
+        <MoodWidget
+          moodLogs={moodLogs}
+          onLog={logMood}
+          onRemove={removeMoodLog}
+        />
+
         {/* Start Workout CTA */}
         <TouchableOpacity
           style={styles.startBtnOuter}
@@ -262,6 +349,153 @@ export default function HomeScreen() {
         <View style={{ height: SCROLL_BOTTOM_PADDING }} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+const MOOD_EMOJIS: Record<number, string> = { 1: '😞', 2: '😕', 3: '😐', 4: '😊', 5: '😄' };
+const MOOD_COLORS: Record<number, string> = {
+  1: Colors.coral, 2: Colors.amber, 3: Colors.textMuted, 4: Colors.teal, 5: Colors.mint,
+};
+
+function WeightMiniChart({ logs }: { logs: BodyWeightLog[] }) {
+  const CHART_W = SCREEN_WIDTH - Spacing.base * 4;
+  const CHART_H = 60;
+  if (logs.length < 2) {
+    const latest = logs[0];
+    return (
+      <View style={{ gap: 2 }}>
+        <Text style={styles.miniChartValue}>{latest.weightKg.toFixed(1)} kg</Text>
+        <Text style={styles.miniCardHint}>Log more entries to see your trend</Text>
+      </View>
+    );
+  }
+  const weights = logs.map((l) => l.weightKg);
+  const minW = Math.min(...weights);
+  const maxW = Math.max(...weights);
+  const range = Math.max(maxW - minW, 0.5);
+  const points = logs
+    .map((l, i) => {
+      const x = (i / (logs.length - 1)) * CHART_W;
+      const y = CHART_H - ((l.weightKg - minW) / range) * (CHART_H - 8) - 4;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const latest = logs[logs.length - 1];
+  const prev = logs[logs.length - 2];
+  const delta = latest.weightKg - prev.weightKg;
+  const deltaColor = delta > 0.05 ? Colors.coral : delta < -0.05 ? Colors.mint : Colors.textMuted;
+  const deltaStr = delta > 0.05 ? `↑${delta.toFixed(1)}` : delta < -0.05 ? `↓${Math.abs(delta).toFixed(1)}` : '→';
+  return (
+    <View style={{ gap: Spacing.xs }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs }}>
+        <Text style={styles.miniChartValue}>{latest.weightKg.toFixed(1)} kg</Text>
+        <Text style={[styles.miniChartDelta, { color: deltaColor }]}>{deltaStr}</Text>
+      </View>
+      <Svg width={CHART_W} height={CHART_H}>
+        <Polyline
+          points={points}
+          fill="none"
+          stroke={Colors.accent}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </Svg>
+    </View>
+  );
+}
+
+function SleepMiniChart({ logs }: { logs: SleepLog[] }) {
+  const CHART_H = 56;
+  const last7 = logs.slice(0, 7).reverse();
+  function barColor(mins: number) {
+    if (mins < 360) return Colors.coral;
+    if (mins < 420) return Colors.amber;
+    if (mins <= 540) return Colors.mint;
+    return Colors.teal;
+  }
+  const avgMins = last7.reduce((s, l) => s + l.durationMinutes, 0) / last7.length;
+  const avgH = Math.floor(avgMins / 60);
+  const avgM = Math.round(avgMins % 60);
+  const avgQuality = last7.reduce((s, l) => s + l.quality, 0) / last7.length;
+  const qualityEmoji = avgQuality >= 4.5 ? '😴' : avgQuality >= 3.5 ? '😊' : avgQuality >= 2.5 ? '😐' : '😞';
+  return (
+    <View style={{ gap: Spacing.xs }}>
+      <View style={styles.sleepBars}>
+        {Array.from({ length: 7 }, (_, i) => {
+          const l = last7[i];
+          const barH = l ? Math.max(4, Math.min(1, l.durationMinutes / 600) * CHART_H) : 4;
+          return (
+            <View key={i} style={[styles.sleepBarTrack, { height: CHART_H }]}>
+              <View
+                style={[
+                  styles.sleepBarFill,
+                  { height: barH, backgroundColor: l ? barColor(l.durationMinutes) : Colors.border },
+                ]}
+              />
+            </View>
+          );
+        })}
+      </View>
+      <Text style={styles.miniCardHint}>
+        Avg: {avgH}h {avgM}m · Quality: {qualityEmoji}
+      </Text>
+    </View>
+  );
+}
+
+function MoodWidget({
+  moodLogs,
+  onLog,
+  onRemove,
+}: {
+  moodLogs: import('../../src/types').MoodLog[];
+  onLog: (mood: 1 | 2 | 3 | 4 | 5) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const today = formatDateISO(new Date());
+  const todayMood = moodLogs.find((m) => m.date === today);
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return formatDateISO(d);
+  });
+  return (
+    <View style={styles.moodCard}>
+      <View style={styles.miniCardHeader}>
+        <Text style={styles.miniCardTitle}>How are you feeling?</Text>
+      </View>
+      {!todayMood ? (
+        <View style={styles.moodEmojiRow}>
+          {([1, 2, 3, 4, 5] as const).map((m) => (
+            <TouchableOpacity key={m} style={styles.moodEmojiBtn} onPress={() => onLog(m)}>
+              <Text style={styles.moodEmojiText}>{MOOD_EMOJIS[m]}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View style={{ gap: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+            <Text style={styles.moodTodayEmoji}>{MOOD_EMOJIS[todayMood.mood]}</Text>
+            <Text style={styles.moodTodayText}>Today</Text>
+            <TouchableOpacity onPress={() => onRemove(todayMood.id)} style={styles.moodChangeBtn}>
+              <Text style={styles.moodChangeBtnText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.moodDotRow}>
+            {last7.map((date) => {
+              const log = moodLogs.find((m) => m.date === date);
+              return (
+                <View
+                  key={date}
+                  style={[styles.moodDot, { backgroundColor: log ? MOOD_COLORS[log.mood] : Colors.border }]}
+                />
+              );
+            })}
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -502,6 +736,37 @@ const styles = StyleSheet.create({
   calorieRemaining: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
   ringPct: { fontSize: Typography.sizes.xs, fontWeight: '700', color: Colors.textPrimary },
 
+  // Gym community widget
+  gymWidget: {
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,217,192,0.25)',
+  },
+  gymWidgetGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.md,
+  },
+  gymWidgetIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gymWidgetName: {
+    fontSize: Typography.sizes.base,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  gymWidgetCount: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.teal,
+    marginTop: 1,
+  },
+
   // Start button
   startBtnOuter: {
     borderRadius: Radius.lg,
@@ -590,4 +855,110 @@ const styles = StyleSheet.create({
   recentDate: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
   recentDurationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   recentDuration: { fontSize: Typography.sizes.xs, color: Colors.accentLight, fontWeight: '600' },
+
+  // Health mini-cards
+  miniCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  miniCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  miniCardTitle: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  miniCardHint: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textMuted,
+  },
+  miniChartValue: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  miniChartDelta: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+  },
+
+  // Sleep bars
+  sleepBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  sleepBarTrack: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  sleepBarFill: {
+    borderRadius: 4,
+  },
+
+  // Mood widget
+  moodCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  moodEmojiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  moodEmojiBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceElevated,
+    marginHorizontal: 3,
+  },
+  moodEmojiText: {
+    fontSize: 24,
+  },
+  moodTodayEmoji: {
+    fontSize: 28,
+  },
+  moodTodayText: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    flex: 1,
+  },
+  moodChangeBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  moodChangeBtnText: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  moodDotRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  moodDot: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+  },
 });

@@ -20,7 +20,8 @@
         "NSCameraUsageDescription": "GymBro records exercise form videos",
         "NSMicrophoneUsageDescription": "GymBro records audio with your exercise videos",
         "NSPhotoLibraryUsageDescription": "GymBro saves exercise videos and progress photos to your library",
-        "NSPhotoLibraryAddUsageDescription": "GymBro saves exercise videos and progress photos to your photo library"
+        "NSPhotoLibraryAddUsageDescription": "GymBro saves exercise videos and progress photos to your photo library",
+        "NSLocationWhenInUseUsageDescription": "GymBro uses your location to find nearby gyms for community check-ins"
       }
     },
     "android": {
@@ -29,7 +30,8 @@
         "backgroundColor": "#0A0A0F"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.gymbro.app"
+      "package": "com.gymbro.app",
+      "permissions": ["ACCESS_FINE_LOCATION"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -53,6 +55,7 @@
           "isAccessMediaLocationEnabled": false
         }
       ],
+      "expo-location",
       "expo-asset",
       [
         "expo-image-picker",

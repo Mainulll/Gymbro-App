@@ -65,11 +65,13 @@ export async function getExerciseHistory(
   db: SQLiteDatabase,
   exerciseTemplateId: string,
   limit = 10,
-): Promise<{ sessionDate: string; maxWeightKg: number; totalVolumeKg: number }[]> {
+): Promise<{ sessionDate: string; maxWeightKg: number; totalVolumeKg: number; totalReps: number; setCount: number; best1RMEstimate: number | null }[]> {
   const rows = await db.getAllAsync<any>(
     `SELECT ws.started_at as session_date,
             MAX(wset.weight_kg) as max_weight,
-            SUM(wset.weight_kg * wset.reps) as total_volume
+            SUM(wset.weight_kg * wset.reps) as total_volume,
+            SUM(wset.reps) as total_reps,
+            COUNT(wset.id) as set_count
      FROM workout_exercises we
      JOIN workout_sessions ws ON we.workout_id = ws.id
      JOIN workout_sets wset ON wset.workout_exercise_id = we.id
@@ -86,6 +88,9 @@ export async function getExerciseHistory(
     sessionDate: r.session_date,
     maxWeightKg: r.max_weight ?? 0,
     totalVolumeKg: r.total_volume ?? 0,
+    totalReps: r.total_reps ?? 0,
+    setCount: r.set_count ?? 0,
+    best1RMEstimate: null, // Populated from set history in the screen
   }));
 }
 

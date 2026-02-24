@@ -43,7 +43,7 @@ export default function RootLayout() {
           headerShadowVisible: false,
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
         <Stack.Screen
           name="workout/new"
           options={{
@@ -116,6 +116,33 @@ export default function RootLayout() {
             title: 'Health & Body',
             headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="gym/select"
+          options={{
+            title: 'Find a Gym',
+            presentation: 'modal',
+            headerBackTitle: '',
+            headerStyle: { backgroundColor: Colors.surface },
+          }}
+        />
+        <Stack.Screen
+          name="calories/micros"
+          options={{
+            title: 'Daily Micronutrients',
+            headerBackTitle: '',
+            headerStyle: { backgroundColor: Colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="food/search"
+          options={{
+            title: 'Search Food',
+            presentation: 'modal',
+            headerBackTitle: '',
+            headerStyle: { backgroundColor: Colors.surface },
+            headerTintColor: Colors.textPrimary,
           }}
         />
       </Stack>

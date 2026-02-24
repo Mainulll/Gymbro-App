@@ -27,6 +27,10 @@ const defaults: UserSettings = {
   targetWeightKg: null,
   activityLevel: 'moderately_active',
   goalType: 'maintain',
+  homeGymId: null,
+  homeGymName: null,
+  homeGymLat: null,
+  homeGymLng: null,
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({

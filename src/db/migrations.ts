@@ -108,4 +108,58 @@ export const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       try { await db.runAsync(sql); } catch { /* column may already exist */ }
     }
   },
+
+  // Migration 6: Vitamin & mineral columns in calorie_entries (nullable — null = not logged)
+  async (db: SQLiteDatabase) => {
+    const cols = [
+      'ALTER TABLE calorie_entries ADD COLUMN vitamin_d_mcg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN vitamin_b12_mcg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN vitamin_c_mg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN iron_mg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN calcium_mg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN magnesium_mg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN potassium_mg REAL',
+      'ALTER TABLE calorie_entries ADD COLUMN zinc_mg REAL',
+    ];
+    for (const sql of cols) {
+      try { await db.runAsync(sql); } catch { /* column may already exist */ }
+    }
+  },
+
+  // Migration 7: Home gym fields in user_settings
+  async (db: SQLiteDatabase) => {
+    const cols = [
+      'ALTER TABLE user_settings ADD COLUMN home_gym_id TEXT',
+      "ALTER TABLE user_settings ADD COLUMN home_gym_name TEXT NOT NULL DEFAULT ''",
+      'ALTER TABLE user_settings ADD COLUMN home_gym_lat REAL',
+      'ALTER TABLE user_settings ADD COLUMN home_gym_lng REAL',
+    ];
+    for (const sql of cols) {
+      try { await db.runAsync(sql); } catch { /* column may already exist */ }
+    }
+  },
+
+  // Migration 8: Custom gyms + mood logs
+  async (db: SQLiteDatabase) => {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS custom_gyms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL DEFAULT '',
+        lat REAL,
+        lng REAL,
+        created_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS mood_logs (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        mood INTEGER NOT NULL,
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_custom_gyms_name ON custom_gyms(name);
+      CREATE INDEX IF NOT EXISTS idx_mood_logs_date ON mood_logs(date);
+    `);
+  },
 ];

@@ -102,9 +102,42 @@ export interface CalorieEntry {
   sugarG: number;
   sodiumMg: number;
   saturatedFatG: number;
+  // Vitamins & minerals — null means "not logged" (distinct from zero)
+  vitaminDMcg: number | null;
+  vitaminB12Mcg: number | null;
+  vitaminCMg: number | null;
+  ironMg: number | null;
+  calciumMg: number | null;
+  magnesiumMg: number | null;
+  potassiumMg: number | null;
+  zincMg: number | null;
   servingSize: number;
   servingUnit: string;
   createdAt: string;
+}
+
+export interface DailyMicroSummary {
+  date: string;
+  vitaminDMcg: number;
+  vitaminB12Mcg: number;
+  vitaminCMg: number;
+  ironMg: number;
+  calciumMg: number;
+  magnesiumMg: number;
+  potassiumMg: number;
+  zincMg: number;
+}
+
+export interface MicroNutrient {
+  key: keyof Omit<DailyMicroSummary, 'date'>;
+  label: string;
+  unit: 'mcg' | 'mg';
+  rdaMale: number;
+  rdaFemale: number;
+  color: string;
+  foodSources: string[];
+  deficiencyWarning: string;
+  supplementTip: string;
 }
 
 export interface DailyNutritionSummary {
@@ -138,6 +171,24 @@ export interface SleepLog {
   createdAt: string;
 }
 
+export interface MoodLog {
+  id: string;
+  date: string;    // YYYY-MM-DD
+  time: string;    // HH:MM
+  mood: 1 | 2 | 3 | 4 | 5;
+  notes: string;
+  createdAt: string;
+}
+
+export interface CustomGym {
+  id: string;
+  name: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  createdAt: string;
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export interface UserSettings {
@@ -159,6 +210,19 @@ export interface UserSettings {
   targetWeightKg: number | null;
   activityLevel: ActivityLevel;
   goalType: GoalType;
+  // Home gym (gym community)
+  homeGymId: string | null;
+  homeGymName: string | null;
+  homeGymLat: number | null;
+  homeGymLng: number | null;
+}
+
+export interface Gym {
+  osmId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  address?: string;
 }
 
 // ─── Active Workout (in-memory Zustand state) ─────────────────────────────────

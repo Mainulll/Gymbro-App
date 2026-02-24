@@ -1,5 +1,5 @@
 import { SQLiteDatabase } from 'expo-sqlite';
-import { BodyWeightLog, SleepLog } from '../../types';
+import { BodyWeightLog, SleepLog, MoodLog } from '../../types';
 
 // ─── Body Weight ──────────────────────────────────────────────────────────────
 
@@ -103,6 +103,57 @@ function mapSleepLog(row: any): SleepLog {
     wakeTime: row.wake_time,
     durationMinutes: row.duration_minutes,
     quality: row.quality,
+    notes: row.notes ?? '',
+    createdAt: row.created_at,
+  };
+}
+
+// ─── Mood ─────────────────────────────────────────────────────────────────────
+
+export async function createMoodLog(
+  db: SQLiteDatabase,
+  log: MoodLog,
+): Promise<void> {
+  await db.runAsync(
+    `INSERT OR REPLACE INTO mood_logs
+       (id, date, time, mood, notes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [log.id, log.date, log.time, log.mood, log.notes, log.createdAt],
+  );
+}
+
+export async function getMoodLogs(
+  db: SQLiteDatabase,
+  limit = 30,
+): Promise<MoodLog[]> {
+  const rows = await db.getAllAsync<any>(
+    'SELECT * FROM mood_logs ORDER BY date DESC, time DESC LIMIT ?',
+    [limit],
+  );
+  return rows.map(mapMoodLog);
+}
+
+export async function getTodayMoodLog(
+  db: SQLiteDatabase,
+  date: string,
+): Promise<MoodLog | null> {
+  const row = await db.getFirstAsync<any>(
+    'SELECT * FROM mood_logs WHERE date = ? ORDER BY created_at DESC LIMIT 1',
+    [date],
+  );
+  return row ? mapMoodLog(row) : null;
+}
+
+export async function deleteMoodLog(db: SQLiteDatabase, id: string): Promise<void> {
+  await db.runAsync('DELETE FROM mood_logs WHERE id = ?', [id]);
+}
+
+function mapMoodLog(row: any): MoodLog {
+  return {
+    id: row.id,
+    date: row.date,
+    time: row.time,
+    mood: row.mood as 1 | 2 | 3 | 4 | 5,
     notes: row.notes ?? '',
     createdAt: row.created_at,
   };

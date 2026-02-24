@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { formatDateISO } from '../../src/utils/date';
 import { consumePendingCaloriePrefill } from '../../src/utils/caloriePrefill';
 import { format, addDays, subDays } from 'date-fns';
+import { FastingState, loadFastingState, startFast, endFast, formatElapsed } from '../../src/utils/fastingTimer';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_LABELS: Record<MealType, string> = {
@@ -80,11 +81,41 @@ export default function CaloriesScreen() {
   const [sugar, setSugar] = useState('');
   const [sodium, setSodium] = useState('');
   const [saturatedFat, setSaturatedFat] = useState('');
+  // Vitamins & minerals
+  const [vitaminD, setVitaminD] = useState('');
+  const [vitaminB12, setVitaminB12] = useState('');
+  const [vitaminC, setVitaminC] = useState('');
+  const [iron, setIron] = useState('');
+  const [calcium, setCalcium] = useState('');
+  const [magnesium, setMagnesium] = useState('');
+  const [potassium, setPotassium] = useState('');
+  const [zinc, setZinc] = useState('');
   const [showMicros, setShowMicros] = useState(false);
+
+  // Fasting timer state
+  const [fastingState, setFastingState] = useState<FastingState>({ isActive: false, startedAt: null, targetHours: null });
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [showCustomFast, setShowCustomFast] = useState(false);
+  const [customFastHours, setCustomFastHours] = useState('');
+
+  // Fasting ticker — updates elapsed every minute while active
+  useEffect(() => {
+    if (!fastingState.isActive || !fastingState.startedAt) return;
+    const id = setInterval(() => {
+      setElapsedMs(Date.now() - new Date(fastingState.startedAt!).getTime());
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [fastingState.isActive, fastingState.startedAt]);
 
   useFocusEffect(
     React.useCallback(() => {
       loadDay(formatDateISO(viewDate));
+      loadFastingState().then((fs) => {
+        setFastingState(fs);
+        if (fs.isActive && fs.startedAt) {
+          setElapsedMs(Date.now() - new Date(fs.startedAt).getTime());
+        }
+      });
       // Consume any pending prefill from barcode scan
       const prefill = consumePendingCaloriePrefill();
       if (prefill) {
@@ -95,11 +126,22 @@ export default function CaloriesScreen() {
         setProtein(prefill.protein ?? '');
         setCarbs(prefill.carbs ?? '');
         setFat(prefill.fat ?? '');
-        setFiber('');
-        setSugar('');
-        setSodium('');
-        setSaturatedFat('');
-        setShowMicros(false);
+        setFiber(prefill.fiber ?? '');
+        setSugar(prefill.sugar ?? '');
+        setSodium(prefill.sodium ?? '');
+        setSaturatedFat(prefill.saturatedFat ?? '');
+        setVitaminD(prefill.vitaminD ?? '');
+        setVitaminB12(prefill.vitaminB12 ?? '');
+        setVitaminC(prefill.vitaminC ?? '');
+        setIron(prefill.iron ?? '');
+        setCalcium(prefill.calcium ?? '');
+        setMagnesium(prefill.magnesium ?? '');
+        setPotassium(prefill.potassium ?? '');
+        setZinc(prefill.zinc ?? '');
+        // Auto-expand vitamins section if any vitamin data was prefilled
+        const hasVitamins = !!(prefill.vitaminD || prefill.vitaminB12 || prefill.vitaminC ||
+          prefill.iron || prefill.calcium || prefill.magnesium || prefill.potassium || prefill.zinc);
+        setShowMicros(hasVitamins);
         setShowAddSheet(true);
       }
     }, [viewDate]),
@@ -128,6 +170,14 @@ export default function CaloriesScreen() {
     setSugar('');
     setSodium('');
     setSaturatedFat('');
+    setVitaminD('');
+    setVitaminB12('');
+    setVitaminC('');
+    setIron('');
+    setCalcium('');
+    setMagnesium('');
+    setPotassium('');
+    setZinc('');
     setShowMicros(false);
     setShowAddSheet(true);
   }
@@ -149,6 +199,14 @@ export default function CaloriesScreen() {
       sugarG: parseFloat(sugar) || 0,
       sodiumMg: parseFloat(sodium) || 0,
       saturatedFatG: parseFloat(saturatedFat) || 0,
+      vitaminDMcg: parseFloat(vitaminD) || null,
+      vitaminB12Mcg: parseFloat(vitaminB12) || null,
+      vitaminCMg: parseFloat(vitaminC) || null,
+      ironMg: parseFloat(iron) || null,
+      calciumMg: parseFloat(calcium) || null,
+      magnesiumMg: parseFloat(magnesium) || null,
+      potassiumMg: parseFloat(potassium) || null,
+      zincMg: parseFloat(zinc) || null,
       servingSize: 100,
       servingUnit: 'g',
     });
@@ -162,8 +220,26 @@ export default function CaloriesScreen() {
     ]);
   }
 
+  async function handleStartFast(hours: number | null) {
+    const fs = await startFast(hours);
+    setFastingState(fs);
+    setElapsedMs(0);
+    setShowCustomFast(false);
+    setCustomFastHours('');
+  }
+
+  async function handleEndFast() {
+    const fs = await endFast();
+    setFastingState(fs);
+    setElapsedMs(0);
+  }
+
   function openBarcode(meal: MealType) {
     router.push({ pathname: '/barcode/scan', params: { meal } });
+  }
+
+  function openFoodSearch(meal: MealType) {
+    router.push({ pathname: '/food/search', params: { meal } });
   }
 
   async function logAlcohol(name: string, kcal: number) {
@@ -180,6 +256,14 @@ export default function CaloriesScreen() {
       sugarG: 0,
       sodiumMg: 0,
       saturatedFatG: 0,
+      vitaminDMcg: null,
+      vitaminB12Mcg: null,
+      vitaminCMg: null,
+      ironMg: null,
+      calciumMg: null,
+      magnesiumMg: null,
+      potassiumMg: null,
+      zincMg: null,
       servingSize: 1,
       servingUnit: 'serving',
     });
@@ -280,7 +364,106 @@ export default function CaloriesScreen() {
                 style={styles.macroBar}
               />
             </View>
+            {/* Micros CTA */}
+            <TouchableOpacity
+              style={styles.microsCta}
+              onPress={() => router.push('/calories/micros')}
+            >
+              <Ionicons name="leaf-outline" size={14} color={Colors.teal} />
+              <Text style={styles.microsCtaText}>View Micronutrient Breakdown</Text>
+              <Ionicons name="chevron-forward" size={13} color={Colors.teal} />
+            </TouchableOpacity>
           </Card>
+
+          {/* Intermittent Fasting Timer */}
+          {(() => {
+            const targetMs = fastingState.targetHours ? fastingState.targetHours * 3_600_000 : null;
+            const fastProgress = targetMs ? Math.min(1, elapsedMs / targetMs) : null;
+            const remainingMs = targetMs ? Math.max(0, targetMs - elapsedMs) : null;
+            return (
+              <Card style={styles.fastingCard}>
+                <View style={styles.fastingHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                    <Text style={{ fontSize: 16 }}>⏱</Text>
+                    <Text style={styles.fastingTitle}>Intermittent Fasting</Text>
+                  </View>
+                  {fastingState.isActive && (
+                    <TouchableOpacity style={styles.endFastBtn} onPress={handleEndFast}>
+                      <Text style={styles.endFastText}>End Fast</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {fastingState.isActive ? (
+                  <View style={{ gap: Spacing.sm }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs }}>
+                      <Text style={styles.fastingElapsed}>{formatElapsed(elapsedMs)}</Text>
+                      {fastingState.targetHours && (
+                        <Text style={styles.fastingTarget}>/ {fastingState.targetHours}h 0m</Text>
+                      )}
+                    </View>
+                    {fastProgress !== null && (
+                      <ProgressBar
+                        progress={fastProgress}
+                        color={Colors.teal}
+                        label=""
+                        valueLabel={remainingMs !== null ? `${formatElapsed(remainingMs)} remaining` : ''}
+                      />
+                    )}
+                    {!fastingState.targetHours && (
+                      <Text style={styles.fastingNoTarget}>No target set — fast until ready</Text>
+                    )}
+                  </View>
+                ) : (
+                  <View style={{ gap: Spacing.sm }}>
+                    <Text style={styles.fastingHint}>Start a fast to track your fasting window</Text>
+                    <View style={styles.fastingPresets}>
+                      {([16, 18, 20] as const).map((h) => (
+                        <TouchableOpacity
+                          key={h}
+                          style={styles.fastingPresetChip}
+                          onPress={() => handleStartFast(h)}
+                        >
+                          <Text style={styles.fastingPresetText}>{h}:8</Text>
+                        </TouchableOpacity>
+                      ))}
+                      <TouchableOpacity
+                        style={styles.fastingPresetChip}
+                        onPress={() => setShowCustomFast((v) => !v)}
+                      >
+                        <Text style={styles.fastingPresetText}>Custom</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {showCustomFast && (
+                      <View style={[styles.formRow, { alignItems: 'flex-end' }]}>
+                        <View style={[styles.formInputWrapper, { flex: 1 }]}>
+                          <Text style={styles.formLabel}>Fasting hours</Text>
+                          <TextInput
+                            value={customFastHours}
+                            onChangeText={setCustomFastHours}
+                            placeholder="e.g. 24"
+                            placeholderTextColor={Colors.textMuted}
+                            keyboardType="number-pad"
+                            keyboardAppearance="dark"
+                            style={styles.formInput}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.logBtn, { flex: 1, marginTop: 0 }]}
+                          onPress={() => {
+                            const h = parseInt(customFastHours, 10);
+                            if (h > 0 && h <= 168) handleStartFast(h);
+                          }}
+                        >
+                          <Text style={styles.logBtnText}>Start Fast</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </Card>
+            );
+          })()}
 
           {/* Meal sections */}
           {MEALS.map((meal) => {
@@ -297,6 +480,13 @@ export default function CaloriesScreen() {
                     {mealCals > 0 && (
                       <Text style={styles.mealCals}>{Math.round(mealCals)} kcal</Text>
                     )}
+                    {/* Food search button */}
+                    <TouchableOpacity
+                      style={styles.barcodeBtn}
+                      onPress={() => openFoodSearch(meal)}
+                    >
+                      <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
+                    </TouchableOpacity>
                     {/* Barcode scan button */}
                     <TouchableOpacity
                       style={styles.barcodeBtn}
@@ -388,7 +578,7 @@ export default function CaloriesScreen() {
         visible={showAddSheet}
         onClose={() => setShowAddSheet(false)}
         title={`Add to ${MEAL_LABELS[addMeal]}`}
-        snapHeight={620}
+        snapHeight={920}
       >
         <View style={styles.addForm}>
           {/* Barcode scan shortcut inside sheet */}
@@ -450,6 +640,23 @@ export default function CaloriesScreen() {
               <View style={styles.formRow}>
                 <MacroInput label="Sodium (mg)" value={sodium} onChange={setSodium} />
                 <MacroInput label="Sat. Fat (g)" value={saturatedFat} onChange={setSaturatedFat} />
+              </View>
+              <Text style={styles.vitaminSectionLabel}>Vitamins & Minerals</Text>
+              <View style={styles.formRow}>
+                <MacroInput label="Vit D (mcg)" value={vitaminD} onChange={setVitaminD} />
+                <MacroInput label="Vit B12 (mcg)" value={vitaminB12} onChange={setVitaminB12} />
+              </View>
+              <View style={styles.formRow}>
+                <MacroInput label="Vit C (mg)" value={vitaminC} onChange={setVitaminC} />
+                <MacroInput label="Iron (mg)" value={iron} onChange={setIron} />
+              </View>
+              <View style={styles.formRow}>
+                <MacroInput label="Calcium (mg)" value={calcium} onChange={setCalcium} />
+                <MacroInput label="Magnesium (mg)" value={magnesium} onChange={setMagnesium} />
+              </View>
+              <View style={styles.formRow}>
+                <MacroInput label="Potassium (mg)" value={potassium} onChange={setPotassium} />
+                <MacroInput label="Zinc (mg)" value={zinc} onChange={setZinc} />
               </View>
             </>
           )}
@@ -861,6 +1068,33 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     color: Colors.textSecondary,
   },
+  microsCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.tealMuted,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0,217,192,0.25)',
+  },
+  microsCtaText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+    color: Colors.teal,
+    flex: 1,
+    textAlign: 'center',
+  },
+  vitaminSectionLabel: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: '700',
+    color: Colors.teal,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: Spacing.xs,
+  },
   alcoholCalcPreview: {
     fontSize: Typography.sizes.xl,
     fontWeight: '700',
@@ -868,4 +1102,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.sm,
   },
+  // Fasting timer
+  fastingCard: { gap: Spacing.sm },
+  fastingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  fastingTitle: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary },
+  fastingElapsed: { fontSize: Typography.sizes.xxl, fontWeight: '800', color: Colors.teal },
+  fastingTarget: { fontSize: Typography.sizes.base, color: Colors.textMuted },
+  fastingHint: { fontSize: Typography.sizes.sm, color: Colors.textMuted },
+  fastingNoTarget: { fontSize: Typography.sizes.xs, color: Colors.textMuted, fontStyle: 'italic' },
+  fastingPresets: { flexDirection: 'row', gap: Spacing.xs },
+  fastingPresetChip: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  fastingPresetText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.teal },
+  endFastBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(255,99,132,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,99,132,0.4)',
+  },
+  endFastText: { fontSize: Typography.sizes.sm, fontWeight: '700', color: Colors.coral },
 });

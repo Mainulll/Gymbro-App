@@ -12,6 +12,20 @@ export interface CaloriePrefill {
   fat: string;
   servingSize: string;
   servingUnit: string;
+  // Optional extended macros
+  fiber?: string;
+  sugar?: string;
+  sodium?: string;
+  saturatedFat?: string;
+  // Optional vitamins & minerals
+  vitaminD?: string;
+  vitaminB12?: string;
+  vitaminC?: string;
+  iron?: string;
+  calcium?: string;
+  magnesium?: string;
+  potassium?: string;
+  zinc?: string;
 }
 
 let pending: CaloriePrefill | null = null;

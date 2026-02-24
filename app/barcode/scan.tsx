@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lookupBarcode, scaleNutrition, FoodProduct } from '../../src/utils/openFoodFacts';
+import { lookupBarcode, scaleNutrition, hasVitaminData, FoodProduct } from '../../src/utils/openFoodFacts';
 import { setPendingCaloriePrefill } from '../../src/utils/caloriePrefill';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
 
@@ -20,41 +20,82 @@ export default function BarcodeScanScreen() {
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
   const [found, setFound] = useState<FoodProduct | null>(null);
+  const scanLockRef = useRef(false);
 
   const handleBarcode = useCallback(
     async ({ data }: { type: string; data: string }) => {
-      if (!scanning || loading) return;
+      if (scanLockRef.current) return;
+      scanLockRef.current = true;
       setScanning(false);
       setLoading(true);
-      const product = await lookupBarcode(data);
-      setLoading(false);
-      if (!product) {
+      try {
+        const product = await lookupBarcode(data);
+        setLoading(false);
+        if (!product) {
+          Alert.alert(
+            'Product Not Found',
+            'This barcode isn\'t in the Open Food Facts database.',
+            [
+              {
+                text: 'Search Manually',
+                onPress: () => {
+                  scanLockRef.current = false;
+                  router.replace({ pathname: '/food/search', params: { meal: meal ?? 'snack' } });
+                },
+              },
+              {
+                text: 'Scan Again',
+                onPress: () => {
+                  scanLockRef.current = false;
+                  setScanning(true);
+                },
+              },
+              { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
+            ],
+          );
+          return;
+        }
+        setFound(product);
+      } catch {
+        setLoading(false);
         Alert.alert(
-          'Product Not Found',
-          'This barcode isn\'t in the Open Food Facts database. You can add it at openfoodfacts.org!',
+          'Scan Error',
+          'Could not look up barcode. Check your connection and try again.',
           [
-            { text: 'Scan Again', onPress: () => setScanning(true) },
+            {
+              text: 'Scan Again',
+              onPress: () => {
+                scanLockRef.current = false;
+                setScanning(true);
+              },
+            },
             { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
           ],
         );
-        return;
       }
-      setFound(product);
     },
-    [scanning, loading],
+    [],
   );
 
   function handleAdd(product: FoodProduct) {
-    const { calories, protein, carbs, fat } = scaleNutrition(product, product.servingSize);
+    const scaled = scaleNutrition(product, product.servingSize);
     setPendingCaloriePrefill({
       meal: meal ?? 'snack',
       foodName: product.brand ? `${product.name} — ${product.brand}` : product.name,
-      calories: String(calories),
-      protein: String(protein),
-      carbs: String(carbs),
-      fat: String(fat),
+      calories: String(scaled.calories),
+      protein: String(scaled.protein),
+      carbs: String(scaled.carbs),
+      fat: String(scaled.fat),
       servingSize: String(product.servingSize),
       servingUnit: product.servingUnit,
+      vitaminD: scaled.vitaminD !== null ? String(scaled.vitaminD) : undefined,
+      vitaminB12: scaled.vitaminB12 !== null ? String(scaled.vitaminB12) : undefined,
+      vitaminC: scaled.vitaminC !== null ? String(scaled.vitaminC) : undefined,
+      iron: scaled.iron !== null ? String(scaled.iron) : undefined,
+      calcium: scaled.calcium !== null ? String(scaled.calcium) : undefined,
+      magnesium: scaled.magnesium !== null ? String(scaled.magnesium) : undefined,
+      potassium: scaled.potassium !== null ? String(scaled.potassium) : undefined,
+      zinc: scaled.zinc !== null ? String(scaled.zinc) : undefined,
     });
     router.back();
   }
@@ -121,6 +162,12 @@ export default function BarcodeScanScreen() {
             <MacroChip label="Fat" value={`${Math.round(found.fatPer100g * found.servingSize / 100 * 10) / 10}`} unit="g" />
           </View>
           <Text style={styles.servingNote}>Per serving ({found.servingSize}{found.servingUnit})</Text>
+          {hasVitaminData(found) && (
+            <View style={styles.vitaminBadge}>
+              <Ionicons name="leaf-outline" size={12} color={Colors.teal} />
+              <Text style={styles.vitaminBadgeText}>Vitamin & mineral data available</Text>
+            </View>
+          )}
 
           <View style={styles.resultBtns}>
             <TouchableOpacity
@@ -251,4 +298,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   permBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
+  vitaminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.tealMuted,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  vitaminBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.teal },
 });
