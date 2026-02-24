@@ -1,3 +1,5 @@
+import { useQuery, type QueryClient } from '@tanstack/react-query';
+
 export interface FoodProduct {
   barcode: string;
   name: string;
@@ -8,6 +10,7 @@ export interface FoodProduct {
   fatPer100g: number;
   servingSize: number;
   servingUnit: string;
+
   // Vitamins & minerals (null = not in API data)
   vitaminDPer100g: number | null;
   vitaminB12Per100g: number | null;
@@ -19,13 +22,17 @@ export interface FoodProduct {
   zincPer100g: number | null;
 }
 
+const OFF_BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
+const OFF_FIELDS =
+  'product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit';
+
 /**
  * Look up a product by barcode using the Open Food Facts API.
  * Covers Australian and global products — no API key required.
  */
 export async function lookupBarcode(barcode: string): Promise<FoodProduct | null> {
   try {
-    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit`;
+    const url = `${OFF_BASE_URL}/${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'GymBro/1.0' } });
     if (!res.ok) return null;
 
@@ -45,17 +52,23 @@ export async function lookupBarcode(barcode: string): Promise<FoodProduct | null
     const vitaminDRaw: number | null = n['vitamin-d_100g'] ?? n['vitamin-d'] ?? null;
     const vitaminB12Raw: number | null = n['vitamin-b12_100g'] ?? n['vitamin-b12'] ?? null;
     const vitaminCRaw: number | null = n['vitamin-c_100g'] ?? n['vitamin-c'] ?? null;
+
+    // Minerals
     const ironRaw: number | null = n['iron_100g'] ?? n['iron'] ?? null;
     const calciumRaw: number | null = n['calcium_100g'] ?? n['calcium'] ?? null;
     const magnesiumRaw: number | null = n['magnesium_100g'] ?? n['magnesium'] ?? null;
     const potassiumRaw: number | null = n['potassium_100g'] ?? n['potassium'] ?? null;
     const zincRaw: number | null = n['zinc_100g'] ?? n['zinc'] ?? null;
 
-    // Open Food Facts stores minerals in kg/100g — convert to mg; vitamins to mcg
+    /**
+     * Open Food Facts sometimes stores minerals as kg/100g (very small values).
+     * These helpers convert typical tiny values into mg / mcg.
+     */
     function toMg(val: number | null): number | null {
       if (val === null) return null;
       return val < 0.1 ? Math.round(val * 1000 * 100) / 100 : val;
     }
+
     function toMcg(val: number | null): number | null {
       if (val === null) return null;
       return val < 0.001 ? Math.round(val * 1_000_000 * 100) / 100 : val;
@@ -64,11 +77,12 @@ export async function lookupBarcode(barcode: string): Promise<FoodProduct | null
     // Parse serving size — fall back to 100 g
     let servingSize = parseFloat(p.serving_quantity) || 100;
     let servingUnit = p.serving_quantity_unit || 'g';
+
     if (!p.serving_quantity && p.serving_size) {
-      const match = p.serving_size.match(/^([\d.]+)\s*([a-zA-Z]+)/);
+      const match = String(p.serving_size).match(/^([\d.]+)\s*([a-zA-Z]+)/);
       if (match) {
         servingSize = parseFloat(match[1]) || 100;
-        servingUnit = match[2];
+        servingUnit = match[2] || 'g';
       }
     }
 
@@ -82,9 +96,11 @@ export async function lookupBarcode(barcode: string): Promise<FoodProduct | null
       fatPer100g: Math.round(fatPer100g * 10) / 10,
       servingSize,
       servingUnit,
+
       vitaminDPer100g: toMcg(vitaminDRaw),
       vitaminB12Per100g: toMcg(vitaminB12Raw),
       vitaminCPer100g: toMg(vitaminCRaw),
+
       ironPer100g: toMg(ironRaw),
       calciumPer100g: toMg(calciumRaw),
       magnesiumPer100g: toMg(magnesiumRaw),
@@ -94,6 +110,43 @@ export async function lookupBarcode(barcode: string): Promise<FoodProduct | null
   } catch {
     return null;
   }
+}
+
+/** Query key factory for TanStack Query */
+export const barcodeQueryKey = (barcode: string) =>
+  ['openFoodFacts', 'barcode', barcode] as const;
+
+/**
+ * TanStack Query hook: barcode -> product (cached + persisted via your QueryClient persister)
+ *
+ * Usage:
+ *   const q = useBarcodeProduct(barcode);
+ *   if (q.isFetching) ...
+ *   if (q.data) ...
+ */
+export function useBarcodeProduct(barcode: string | null, enabled = true) {
+  return useQuery({
+    queryKey: barcode ? barcodeQueryKey(barcode) : (['openFoodFacts', 'barcode', 'none'] as const),
+    queryFn: async () => {
+      if (!barcode) return null;
+      return lookupBarcode(barcode);
+    },
+    enabled: !!barcode && enabled,
+
+    // Barcode data doesn’t change often → cache aggressively
+    staleTime: 1000 * 60 * 60 * 24, // 24h
+    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days retained
+    retry: 1,
+  });
+}
+
+/** Optional prefetch helper (useful for manual barcode entry flows) */
+export async function prefetchBarcodeProduct(queryClient: QueryClient, barcode: string) {
+  await queryClient.prefetchQuery({
+    queryKey: barcodeQueryKey(barcode),
+    queryFn: () => lookupBarcode(barcode),
+    staleTime: 1000 * 60 * 60 * 24,
+  });
 }
 
 function scaleNullable(value: number | null, ratio: number): number | null {
