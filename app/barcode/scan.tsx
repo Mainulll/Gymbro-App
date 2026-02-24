@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -9,53 +10,101 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lookupBarcode, scaleNutrition, hasVitaminData, FoodProduct } from '../../src/utils/openFoodFacts';
+
+import {
+  lookupBarcode,
+  scaleNutrition,
+  hasVitaminData,
+  FoodProduct,
+} from '../../src/utils/openFoodFacts';
 import { setPendingCaloriePrefill } from '../../src/utils/caloriePrefill';
 import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+
+type BarcodeResult = { type: string; data: string };
 
 export default function BarcodeScanScreen() {
   const { meal } = useLocalSearchParams<{ meal?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
+
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
   const [found, setFound] = useState<FoodProduct | null>(null);
+
+  // Prevent multiple concurrent lookups
   const scanLockRef = useRef(false);
 
+  // Prevent instant re-scan of the same barcode (common “loop” cause)
+  const lastScanRef = useRef<{ data: string; ts: number } | null>(null);
+
+  const safeExit = useCallback(() => {
+    scanLockRef.current = false;
+    setLoading(false);
+    router.back();
+  }, []);
+
+  const resumeScanningWithDelay = useCallback((delayMs = 800) => {
+    scanLockRef.current = false;
+    setLoading(false);
+
+    // Pause briefly so the camera doesn’t instantly re-fire on the same code
+    setScanning(false);
+    setTimeout(() => setScanning(true), delayMs);
+  }, []);
+
   const handleBarcode = useCallback(
-    async ({ data }: { type: string; data: string }) => {
+    async ({ data }: BarcodeResult) => {
       if (scanLockRef.current) return;
+
+      // Cooldown for duplicate scans of the same code
+      const now = Date.now();
+      const last = lastScanRef.current;
+      if (last && last.data === data && now - last.ts < 2000) {
+        // Don’t keep the lock if we’re ignoring this scan
+        scanLockRef.current = false;
+        return;
+      }
+      lastScanRef.current = { data, ts: now };
+
       scanLockRef.current = true;
       setScanning(false);
       setLoading(true);
+
       try {
         const product = await lookupBarcode(data);
         setLoading(false);
+
         if (!product) {
           Alert.alert(
             'Product Not Found',
-            'This barcode isn\'t in the Open Food Facts database.',
+            "This barcode isn't in the Open Food Facts database.",
             [
               {
                 text: 'Search Manually',
                 onPress: () => {
                   scanLockRef.current = false;
-                  router.replace({ pathname: '/food/search', params: { meal: meal ?? 'snack' } });
+                  setLoading(false);
+                  router.replace({
+                    pathname: '/food/search',
+                    params: { meal: meal ?? 'snack' },
+                  });
                 },
               },
               {
                 text: 'Scan Again',
-                onPress: () => {
-                  scanLockRef.current = false;
-                  setScanning(true);
-                },
+                onPress: () => resumeScanningWithDelay(800),
               },
-              { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: safeExit,
+              },
             ],
           );
           return;
         }
+
         setFound(product);
+        // Keep lock true while showing result (camera is hidden anyway)
       } catch {
         setLoading(false);
         Alert.alert(
@@ -64,21 +113,23 @@ export default function BarcodeScanScreen() {
           [
             {
               text: 'Scan Again',
-              onPress: () => {
-                scanLockRef.current = false;
-                setScanning(true);
-              },
+              onPress: () => resumeScanningWithDelay(800),
             },
-            { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: safeExit,
+            },
           ],
         );
       }
     },
-    [],
+    [meal, resumeScanningWithDelay, safeExit],
   );
 
   function handleAdd(product: FoodProduct) {
     const scaled = scaleNutrition(product, product.servingSize);
+
     setPendingCaloriePrefill({
       meal: meal ?? 'snack',
       foodName: product.brand ? `${product.name} — ${product.brand}` : product.name,
@@ -97,6 +148,7 @@ export default function BarcodeScanScreen() {
       potassium: scaled.potassium !== null ? String(scaled.potassium) : undefined,
       zinc: scaled.zinc !== null ? String(scaled.zinc) : undefined,
     });
+
     router.back();
   }
 
@@ -120,13 +172,22 @@ export default function BarcodeScanScreen() {
           style={StyleSheet.absoluteFill}
           facing="back"
           onBarcodeScanned={scanning ? handleBarcode : undefined}
-          barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'] }}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'],
+          }}
         />
       )}
 
       {/* Top bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.topBtn}>
+        <TouchableOpacity
+          onPress={() => {
+            scanLockRef.current = false;
+            setLoading(false);
+            router.back();
+          }}
+          style={styles.topBtn}
+        >
           <Ionicons name="close" size={28} color="white" />
         </TouchableOpacity>
         <Text style={styles.topTitle}>Scan Barcode</Text>
@@ -152,16 +213,39 @@ export default function BarcodeScanScreen() {
       {/* Product result */}
       {found && (
         <View style={styles.resultCard}>
-          <Text style={styles.productName} numberOfLines={2}>{found.name}</Text>
+          <Text style={styles.productName} numberOfLines={2}>
+            {found.name}
+          </Text>
           {!!found.brand && <Text style={styles.brandName}>{found.brand}</Text>}
 
           <View style={styles.macrosRow}>
-            <MacroChip label="Cal" value={`${Math.round(found.caloriesPer100g * found.servingSize / 100)}`} unit="kcal" />
-            <MacroChip label="Protein" value={`${Math.round(found.proteinPer100g * found.servingSize / 100 * 10) / 10}`} unit="g" />
-            <MacroChip label="Carbs" value={`${Math.round(found.carbsPer100g * found.servingSize / 100 * 10) / 10}`} unit="g" />
-            <MacroChip label="Fat" value={`${Math.round(found.fatPer100g * found.servingSize / 100 * 10) / 10}`} unit="g" />
+            <MacroChip
+              label="Cal"
+              value={`${Math.round((found.caloriesPer100g * found.servingSize) / 100)}`}
+              unit="kcal"
+            />
+            <MacroChip
+              label="Protein"
+              value={`${Math.round(((found.proteinPer100g * found.servingSize) / 100) * 10) / 10}`}
+              unit="g"
+            />
+            <MacroChip
+              label="Carbs"
+              value={`${Math.round(((found.carbsPer100g * found.servingSize) / 100) * 10) / 10}`}
+              unit="g"
+            />
+            <MacroChip
+              label="Fat"
+              value={`${Math.round(((found.fatPer100g * found.servingSize) / 100) * 10) / 10}`}
+              unit="g"
+            />
           </View>
-          <Text style={styles.servingNote}>Per serving ({found.servingSize}{found.servingUnit})</Text>
+
+          <Text style={styles.servingNote}>
+            Per serving ({found.servingSize}
+            {found.servingUnit})
+          </Text>
+
           {hasVitaminData(found) && (
             <View style={styles.vitaminBadge}>
               <Ionicons name="leaf-outline" size={12} color={Colors.teal} />
@@ -172,10 +256,17 @@ export default function BarcodeScanScreen() {
           <View style={styles.resultBtns}>
             <TouchableOpacity
               style={styles.scanAgainBtn}
-              onPress={() => { setFound(null); setScanning(true); }}
+              onPress={() => {
+                setFound(null);
+                scanLockRef.current = false;
+                lastScanRef.current = null;
+                setScanning(false);
+                setTimeout(() => setScanning(true), 800);
+              }}
             >
               <Text style={styles.scanAgainText}>Scan Again</Text>
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.addBtn} onPress={() => handleAdd(found)}>
               <Text style={styles.addBtnText}>Add to Log</Text>
             </TouchableOpacity>
@@ -198,7 +289,12 @@ function MacroChip({ label, value, unit }: { label: string; value: string; unit:
 
 const chipStyles = StyleSheet.create({
   chip: { alignItems: 'center', flex: 1, gap: 2 },
-  label: { fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
+  label: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
   value: { fontSize: Typography.sizes.lg, fontWeight: '700', color: Colors.textPrimary },
   unit: { fontSize: 10, color: Colors.textSecondary },
 });
@@ -207,7 +303,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   topBar: {
     position: 'absolute',
-    top: 0, left: 0, right: 0,
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -228,7 +326,10 @@ const styles = StyleSheet.create({
   loadingText: { color: 'white', fontSize: Typography.sizes.base },
   frameGuide: {
     position: 'absolute',
-    top: 0, bottom: 0, left: 0, right: 0,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.base,
@@ -244,7 +345,9 @@ const styles = StyleSheet.create({
   hint: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.sizes.sm },
   resultCard: {
     position: 'absolute',
-    bottom: 0, left: 0, right: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: Colors.surface,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
@@ -289,7 +392,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
-  permText: { color: 'white', fontSize: Typography.sizes.base, textAlign: 'center', margin: Spacing.xl },
+  permText: {
+    color: 'white',
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    margin: Spacing.xl,
+  },
   permBtn: {
     backgroundColor: Colors.accent,
     borderRadius: Radius.md,
