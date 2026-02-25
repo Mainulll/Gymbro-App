@@ -27,7 +27,9 @@ export default function BarcodeScanScreen() {
   const scanLockRef = useRef(false);
   // Cooldown: ignore repeat scans of the same barcode within 2 s
   const lastScanRef = useRef<{ data: string; ts: number } | null>(null);
-  // Track which codes we've already shown an alert for (prevent double-firing)
+  // Track which barcode triggered the "not found" alert so we never show it
+  // twice for the same code. resumeScanningWithDelay() resets this to null,
+  // so a subsequent *different* not-found barcode will always alert correctly.
   const alertedRef = useRef<string | null>(null);
 
   // TanStack Query — cached for 24 h so repeat scans are instant

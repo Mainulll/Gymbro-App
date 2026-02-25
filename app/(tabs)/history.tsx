@@ -18,7 +18,7 @@ import {
   getAllWorkoutSessions,
   deleteWorkoutSession,
   updateWorkoutSession,
-  getWorkoutExercises,
+  getWorkoutExercisesForSessions,
 } from '../../src/db/queries/workouts';
 import { WorkoutSession, WorkoutExercise } from '../../src/types';
 import { HistoryCard } from '../../src/components/workout/HistoryCard';
@@ -47,12 +47,14 @@ export default function HistoryScreen() {
     setLoading(true);
     const db = await getDatabase();
     const rawSessions = await getAllWorkoutSessions(db, 200);
-    const enriched = await Promise.all(
-      rawSessions.map(async (s) => {
-        const exercises = await getWorkoutExercises(db, s.id);
-        return { ...s, exercises };
-      }),
+    const exerciseMap = await getWorkoutExercisesForSessions(
+      db,
+      rawSessions.map((s) => s.id),
     );
+    const enriched = rawSessions.map((s) => ({
+      ...s,
+      exercises: exerciseMap.get(s.id) ?? [],
+    }));
     setSessions(enriched);
     setLoading(false);
   }

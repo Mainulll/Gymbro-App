@@ -61,7 +61,12 @@ export const useCalorieStore = create<CalorieStore>((set, get) => ({
       id: generateId(),
       createdAt: new Date().toISOString(),
     };
-    await createCalorieEntry(db, newEntry);
+    try {
+      await createCalorieEntry(db, newEntry);
+    } catch (err) {
+      console.error('[calorieStore] Failed to persist entry:', err);
+      throw err; // propagate so the UI can show an error
+    }
 
     set((s) => {
       if (entry.date !== s.currentDate) return s;

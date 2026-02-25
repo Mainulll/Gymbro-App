@@ -141,20 +141,70 @@ function mapExercise(row: any): WorkoutExercise {
 
 // ─── Weekly Stats ─────────────────────────────────────────────────────────────
 
+export async function getWorkoutStreak(db: SQLiteDatabase): Promise<number> {
+  // Count consecutive days with at least one finished workout, going backward
+  // from today (inclusive). Days with no workout break the streak.
+  const result = await db.getFirstAsync<{ streak: number }>(
+    `WITH daily AS (
+       SELECT DISTINCT date(started_at) AS workout_date
+       FROM workout_sessions
+       WHERE finished_at IS NOT NULL
+     ),
+     ranked AS (
+       SELECT workout_date,
+              julianday('now', 'localtime') - julianday(workout_date) AS days_ago,
+              ROW_NUMBER() OVER (ORDER BY workout_date DESC) AS rn
+       FROM daily
+     )
+     SELECT COUNT(*) AS streak FROM ranked
+     WHERE days_ago - rn < 1`,
+  );
+  return result?.streak ?? 0;
+}
+
 export async function getWeeklyStats(
   db: SQLiteDatabase,
   weekStart: string,
   weekEnd: string,
 ): Promise<{ workoutCount: number; totalVolumeKg: number; streak: number }> {
-  const result = await db.getFirstAsync<any>(
-    `SELECT COUNT(*) as workout_count, COALESCE(SUM(total_volume_kg), 0) as total_volume
-     FROM workout_sessions
-     WHERE started_at >= ? AND started_at <= ? AND finished_at IS NOT NULL`,
-    [weekStart, weekEnd],
-  );
+  const [result, streak] = await Promise.all([
+    db.getFirstAsync<any>(
+      `SELECT COUNT(*) as workout_count, COALESCE(SUM(total_volume_kg), 0) as total_volume
+       FROM workout_sessions
+       WHERE started_at >= ? AND started_at <= ? AND finished_at IS NOT NULL`,
+      [weekStart, weekEnd],
+    ),
+    getWorkoutStreak(db),
+  ]);
   return {
     workoutCount: result?.workout_count ?? 0,
     totalVolumeKg: result?.total_volume ?? 0,
-    streak: 0, // calculated separately
+    streak,
   };
+}
+
+// ─── Batched Exercise Fetch (avoids N+1 in history screen) ───────────────────
+
+export async function getWorkoutExercisesForSessions(
+  db: SQLiteDatabase,
+  workoutIds: string[],
+): Promise<Map<string, WorkoutExercise[]>> {
+  if (workoutIds.length === 0) return new Map();
+  const placeholders = workoutIds.map(() => '?').join(', ');
+  const rows = await db.getAllAsync<any>(
+    `SELECT we.*, et.name as exercise_name, et.muscle_group
+     FROM workout_exercises we
+     JOIN exercise_templates et ON we.exercise_template_id = et.id
+     WHERE we.workout_id IN (${placeholders})
+     ORDER BY we.workout_id, we.order_index ASC`,
+    workoutIds,
+  );
+  const map = new Map<string, WorkoutExercise[]>();
+  for (const row of rows) {
+    const ex = mapExercise(row);
+    const list = map.get(ex.workoutId) ?? [];
+    list.push(ex);
+    map.set(ex.workoutId, list);
+  }
+  return map;
 }

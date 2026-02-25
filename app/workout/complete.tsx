@@ -61,14 +61,21 @@ export default function WorkoutCompleteScreen() {
 
   async function handleHomeGymCheckIn() {
     if (!settings.homeGymId || !settings.homeGymName) return;
+    // Guard: without valid coordinates the check-in would post (0°N, 0°E).
+    if (!settings.homeGymLat || !settings.homeGymLng) return;
     const gym: OSMGym = {
       osmId: settings.homeGymId,
       name: settings.homeGymName,
-      lat: settings.homeGymLat ?? 0,
-      lng: settings.homeGymLng ?? 0,
+      lat: settings.homeGymLat,
+      lng: settings.homeGymLng,
     };
-    await checkInToGym(gym).catch(() => {});
-    setCheckedIn(true);
+    try {
+      await checkInToGym(gym);
+      setCheckedIn(true);
+    } catch (err) {
+      console.error('[complete] Check-in failed:', err);
+      Alert.alert('Check-in failed', 'Could not record your check-in. Please try again.');
+    }
   }
 
   async function pickPhoto(source: 'camera' | 'library') {

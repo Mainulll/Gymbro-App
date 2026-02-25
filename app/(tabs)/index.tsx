@@ -71,7 +71,9 @@ export default function HomeScreen() {
     // Load home gym community count
     const { homeGymId } = settings;
     if (homeGymId) {
-      getTodayCheckinCount(buildGymId(homeGymId)).then(setHomeGymCount).catch(() => {});
+      getTodayCheckinCount(buildGymId(homeGymId))
+        .then(setHomeGymCount)
+        .catch((err) => console.error('[home] Failed to load gym check-in count:', err));
     } else {
       setHomeGymCount(null);
     }
@@ -458,10 +460,10 @@ function SleepMiniChart({ logs }: { logs: SleepLog[] }) {
   const CHART_H = 56;
   const last7 = logs.slice(0, 7).reverse();
   function barColor(mins: number) {
-    if (mins < 360) return Colors.coral;
-    if (mins < 420) return Colors.amber;
-    if (mins <= 540) return Colors.mint;
-    return Colors.teal;
+    if (mins < 360) return Colors.coral;   // <6 h — too little
+    if (mins < 420) return Colors.amber;   // 6–7 h — below target
+    if (mins <= 540) return Colors.mint;   // 7–9 h — ideal range
+    return Colors.teal;                    // >9 h — long/overflow (visually distinct)
   }
   const avgMins = last7.reduce((s, l) => s + l.durationMinutes, 0) / last7.length;
   const avgH = Math.floor(avgMins / 60);
@@ -473,6 +475,7 @@ function SleepMiniChart({ logs }: { logs: SleepLog[] }) {
       <View className="flex-row items-end" style={{ gap: 6 }}>
         {Array.from({ length: 7 }, (_, i) => {
           const l = last7[i];
+          // Cap the bar at 10 h (600 min) for scaling; show teal for >9 h overflow
           const barH = l ? Math.max(4, Math.min(1, l.durationMinutes / 600) * CHART_H) : 4;
           return (
             <View

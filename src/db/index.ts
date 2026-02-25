@@ -27,13 +27,19 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   );
   const currentVersion = row?.version ?? 0;
 
+  // Determine insert-vs-update once, before the loop.
+  // On a fresh install (version 0) the first iteration must INSERT;
+  // all subsequent iterations (including upgrades from v>0) must UPDATE.
+  let needsInsert = currentVersion === 0;
+
   for (let i = currentVersion; i < migrations.length; i++) {
     await migrations[i](db);
-    if (currentVersion === 0) {
+    if (needsInsert) {
       await db.runAsync(
         'INSERT INTO schema_version (version) VALUES (?);',
         [i + 1],
       );
+      needsInsert = false; // only the very first row ever uses INSERT
     } else {
       await db.runAsync(
         'UPDATE schema_version SET version = ?;',

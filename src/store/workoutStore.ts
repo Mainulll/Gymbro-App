@@ -299,11 +299,13 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     }
 
     const db = await getDatabase();
-    await updateWorkoutSession(db, sessionId, {
-      finishedAt: now.toISOString(),
-      durationSeconds,
-      totalVolumeKg,
-      name: state.activeWorkout.name,
+    await db.withTransactionAsync(async () => {
+      await updateWorkoutSession(db, sessionId, {
+        finishedAt: now.toISOString(),
+        durationSeconds,
+        totalVolumeKg,
+        name: state.activeWorkout!.name,
+      });
     });
 
     set({ activeWorkout: null });

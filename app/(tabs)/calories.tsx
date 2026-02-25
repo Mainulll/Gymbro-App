@@ -186,11 +186,16 @@ export default function CaloriesScreen() {
       Alert.alert('Required', 'Please enter a food name and calories.');
       return;
     }
+    const parsedCalories = parseFloat(calories);
+    if (!Number.isFinite(parsedCalories) || parsedCalories < 0) {
+      Alert.alert('Invalid calories', 'Please enter a valid number for calories.');
+      return;
+    }
     await addEntry({
       date: formatDateISO(viewDate),
       mealType: addMeal,
       foodName: foodName.trim(),
-      calories: parseFloat(calories) || 0,
+      calories: parsedCalories,
       proteinG: parseFloat(protein) || 0,
       carbsG: parseFloat(carbs) || 0,
       fatG: parseFloat(fat) || 0,

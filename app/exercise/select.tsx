@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   SectionList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -29,16 +30,19 @@ export default function ExerciseSelectScreen() {
   const [filtered, setFiltered] = useState<ExerciseTemplate[]>([]);
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadExercises();
   }, []);
 
   async function loadExercises() {
+    setLoading(true);
     const db = await getDatabase();
     const exercises = await getAllExerciseTemplates(db);
     setAllExercises(exercises);
     setFiltered(exercises);
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -140,6 +144,13 @@ export default function ExerciseSelectScreen() {
       />
 
       {/* Exercise list */}
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={Colors.accent}
+          style={{ marginTop: 40 }}
+        />
+      ) : null}
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}

@@ -36,7 +36,13 @@ const firebaseConfig = {
   appId: 'YOUR_APP_ID',
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+// Community features are disabled until real Firebase credentials are provided.
+// Replace the placeholder strings above to enable gym check-in counts.
+export const FIREBASE_ENABLED = !firebaseConfig.apiKey.startsWith('YOUR_');
 
-export const firestoreDb = getFirestore(app);
-export const firebaseAuth = getAuth(app);
+const app = FIREBASE_ENABLED
+  ? (getApps().length ? getApps()[0] : initializeApp(firebaseConfig))
+  : null;
+
+export const firestoreDb = app ? getFirestore(app) : null;
+export const firebaseAuth = app ? getAuth(app) : null;
