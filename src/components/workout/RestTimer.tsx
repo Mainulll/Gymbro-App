@@ -1,15 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Modal,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 import { formatDuration } from '../../utils/date';
 import { ProgressRing } from '../ui/ProgressRing';
 
@@ -61,25 +54,36 @@ export function RestTimer({ visible, durationSeconds, onDismiss }: RestTimerProp
       presentationStyle="overFullScreen"
       onRequestClose={onDismiss}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.label}>Rest Timer</Text>
+      <View
+        className="flex-1 justify-end px-4"
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)', paddingBottom: 100 }}
+      >
+        <View className="bg-surface rounded-[20px] p-6 items-center gap-5 border border-border">
+          <Text className="text-[13px] font-semibold text-text-secondary uppercase tracking-[1px]">
+            Rest Timer
+          </Text>
 
-          <ProgressRing
-            size={120}
-            strokeWidth={8}
-            progress={progress}
-            color={Colors.accent}
-          >
-            <Text style={styles.time}>{formatDuration(remaining)}</Text>
+          <ProgressRing size={120} strokeWidth={8} progress={progress} color={Colors.accent}>
+            <Text
+              className="text-[24px] font-bold text-text-primary"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {formatDuration(remaining)}
+            </Text>
           </ProgressRing>
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.addBtn} onPress={() => setRemaining((r) => r + 15)}>
-              <Text style={styles.addBtnText}>+15s</Text>
+          <View className="flex-row gap-3 items-center">
+            <TouchableOpacity
+              className="px-4 py-2 rounded-xl bg-surface-elevated border border-border"
+              onPress={() => setRemaining((r) => r + 15)}
+            >
+              <Text className="text-[13px] font-semibold text-text-secondary">+15s</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.skipBtn} onPress={onDismiss}>
-              <Text style={styles.skipText}>Skip</Text>
+            <TouchableOpacity
+              className="flex-row items-center gap-1 px-4 py-2 rounded-xl bg-accent"
+              onPress={onDismiss}
+            >
+              <Text className="text-[13px] font-semibold text-text-primary">Skip</Text>
               <Ionicons name="play-skip-forward" size={16} color={Colors.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -88,67 +92,3 @@ export function RestTimer({ visible, durationSeconds, onDismiss }: RestTimerProp
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingBottom: 100,
-    paddingHorizontal: Spacing.base,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  label: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  time: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    alignItems: 'center',
-  },
-  addBtn: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  addBtnText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  skipBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accent,
-  },
-  skipText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-});

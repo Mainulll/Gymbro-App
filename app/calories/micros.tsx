@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -18,7 +17,7 @@ import {
   MicroStatus,
 } from '../../src/constants/micronutrients';
 import { MicroNutrient } from '../../src/types';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 
 const STATUS_CONFIG: Record<MicroStatus, { label: string; color: string; bg: string }> = {
   excellent: { label: 'Excellent', color: Colors.mint, bg: Colors.mintMuted },
@@ -54,12 +53,17 @@ export default function MicrosScreen() {
           headerTintColor: Colors.textPrimary,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+        <ScrollView
+          contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 48 }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header card */}
-          <View style={styles.headerCard}>
-            <Text style={styles.headerDate}>{formatDate(currentDate)}</Text>
-            <Text style={styles.headerSub}>
+          <View className="bg-surface rounded-2xl border border-border p-4 mb-1">
+            <Text className="text-[15px] font-bold text-text-primary">
+              {formatDate(currentDate)}
+            </Text>
+            <Text className="text-[13px] text-text-muted mt-0.5">
               Targets based on {sex === 'female' ? 'Female' : 'Male'} RDA
             </Text>
           </View>
@@ -78,12 +82,15 @@ export default function MicrosScreen() {
 
           {/* Summary card */}
           {needsAttention.length > 0 ? (
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryHeader}>
+            <View
+              className="bg-surface rounded-2xl border p-4 gap-2 mt-1"
+              style={{ borderColor: 'rgba(255,179,71,0.3)' }}
+            >
+              <View className="flex-row items-center gap-2">
                 <Ionicons name="alert-circle-outline" size={18} color={Colors.amber} />
-                <Text style={styles.summaryTitle}>Needs Attention</Text>
+                <Text className="text-[15px] font-bold text-text-primary">Needs Attention</Text>
               </View>
-              <Text style={styles.summarySub}>
+              <Text className="text-[13px] text-text-muted">
                 These nutrients are below recommended levels today:
               </Text>
               {needsAttention.map((n) => {
@@ -91,10 +98,15 @@ export default function MicrosScreen() {
                 const rda = getRDA(n, sex);
                 const status = getMicroStatus(value, rda);
                 return (
-                  <View key={n.key} style={styles.summaryRow}>
-                    <View style={[styles.colorDot, { backgroundColor: n.color }]} />
-                    <Text style={styles.summaryNutrient}>{n.label}</Text>
-                    <Text style={styles.summaryStatus}>
+                  <View key={n.key} className="flex-row items-center gap-2 py-0.5">
+                    <View
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: n.color }}
+                    />
+                    <Text className="flex-1 text-[13px] text-text-secondary font-semibold">
+                      {n.label}
+                    </Text>
+                    <Text className="text-[13px]" style={{ color: Colors.amber }}>
                       {status === 'missing'
                         ? 'Not logged'
                         : `${Math.round((value / rda) * 100)}% of RDA`}
@@ -104,10 +116,15 @@ export default function MicrosScreen() {
               })}
             </View>
           ) : (
-            <View style={styles.allGoodCard}>
+            <View
+              className="bg-surface rounded-2xl border p-6 items-center gap-2 mt-1"
+              style={{ borderColor: Colors.mintMuted }}
+            >
               <Ionicons name="checkmark-circle-outline" size={36} color={Colors.mint} />
-              <Text style={styles.allGoodTitle}>All nutrients on track!</Text>
-              <Text style={styles.allGoodSub}>
+              <Text className="text-[15px] font-bold" style={{ color: Colors.mint }}>
+                All nutrients on track!
+              </Text>
+              <Text className="text-[13px] text-text-muted text-center">
                 Great job hitting your micronutrient targets today.
               </Text>
             </View>
@@ -135,22 +152,35 @@ function NutrientCard({ nutrient, value, sex, isExpanded, onToggle }: NutrientCa
 
   return (
     <TouchableOpacity
-      style={styles.nutrientCard}
+      className="bg-surface rounded-2xl border border-border p-3 gap-2"
       onPress={onToggle}
       activeOpacity={0.8}
     >
       {/* Header row */}
-      <View style={styles.nutrientHeader}>
-        <View style={styles.nutrientNameRow}>
-          <View style={[styles.colorDot, { backgroundColor: nutrient.color }]} />
-          <Text style={styles.nutrientName}>{nutrient.label}</Text>
-          <View style={[styles.unitBadge, { backgroundColor: cfg.bg }]}>
-            <Text style={[styles.unitBadgeText, { color: cfg.color }]}>{nutrient.unit}</Text>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-2 flex-1">
+          <View
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: nutrient.color }}
+          />
+          <Text className="text-[15px] font-bold text-text-primary">{nutrient.label}</Text>
+          <View
+            className="rounded-full px-1"
+            style={{ backgroundColor: cfg.bg, paddingVertical: 2 }}
+          >
+            <Text className="text-[10px] font-semibold" style={{ color: cfg.color }}>
+              {nutrient.unit}
+            </Text>
           </View>
         </View>
-        <View style={styles.headerRight}>
-          <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-            <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+        <View className="flex-row items-center gap-2">
+          <View
+            className="rounded-full px-2"
+            style={{ backgroundColor: cfg.bg, paddingVertical: 3 }}
+          >
+            <Text className="text-[11px] font-bold" style={{ color: cfg.color }}>
+              {cfg.label}
+            </Text>
           </View>
           <Ionicons
             name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -161,17 +191,15 @@ function NutrientCard({ nutrient, value, sex, isExpanded, onToggle }: NutrientCa
       </View>
 
       {/* Progress bar */}
-      <View style={styles.progressTrack}>
+      <View className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
         <View
-          style={[
-            styles.progressFill,
-            { width: `${pct * 100}%` as `${number}%`, backgroundColor: nutrient.color },
-          ]}
+          className="h-1.5 rounded-full"
+          style={{ width: `${pct * 100}%` as `${number}%`, backgroundColor: nutrient.color }}
         />
       </View>
 
       {/* Value text */}
-      <Text style={styles.valueText}>
+      <Text className="text-[11px] text-text-secondary">
         {status === 'missing'
           ? `0 / ${rda} ${nutrient.unit} — not logged today`
           : `${displayValue} / ${rda} ${nutrient.unit} (${Math.round(pct * 100)}%)`}
@@ -179,222 +207,63 @@ function NutrientCard({ nutrient, value, sex, isExpanded, onToggle }: NutrientCa
 
       {/* Expanded details */}
       {isExpanded && (
-        <View style={styles.expandedSection}>
-          <View style={styles.divider} />
+        <View className="gap-3">
+          <View className="h-px bg-border" />
 
-          <View style={styles.infoBlock}>
-            <View style={styles.infoLabelRow}>
+          <View className="gap-1">
+            <View className="flex-row items-center gap-1">
               <Ionicons name="warning-outline" size={13} color={Colors.amber} />
-              <Text style={styles.infoLabel}>Why it matters</Text>
+              <Text
+                className="text-[11px] font-bold text-text-secondary uppercase"
+                style={{ letterSpacing: 0.5 }}
+              >
+                Why it matters
+              </Text>
             </View>
-            <Text style={styles.infoText}>{nutrient.deficiencyWarning}</Text>
+            <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 20 }}>
+              {nutrient.deficiencyWarning}
+            </Text>
           </View>
 
-          <View style={styles.infoBlock}>
-            <View style={styles.infoLabelRow}>
+          <View className="gap-1">
+            <View className="flex-row items-center gap-1">
               <Ionicons name="restaurant-outline" size={13} color={Colors.teal} />
-              <Text style={styles.infoLabel}>Best food sources</Text>
+              <Text
+                className="text-[11px] font-bold text-text-secondary uppercase"
+                style={{ letterSpacing: 0.5 }}
+              >
+                Best food sources
+              </Text>
             </View>
-            <View style={styles.foodSourcesRow}>
+            <View className="flex-row flex-wrap gap-1">
               {nutrient.foodSources.map((food) => (
-                <View key={food} style={styles.foodChip}>
-                  <Text style={styles.foodChipText}>{food}</Text>
+                <View
+                  key={food}
+                  className="bg-surface-elevated rounded-full px-2 border border-border"
+                  style={{ paddingVertical: 3 }}
+                >
+                  <Text className="text-[12px] text-text-secondary font-medium">{food}</Text>
                 </View>
               ))}
             </View>
           </View>
 
-          <View style={styles.infoBlock}>
-            <View style={styles.infoLabelRow}>
+          <View className="gap-1">
+            <View className="flex-row items-center gap-1">
               <Ionicons name="flask-outline" size={13} color={Colors.accent} />
-              <Text style={styles.infoLabel}>Supplement tip</Text>
+              <Text
+                className="text-[11px] font-bold text-text-secondary uppercase"
+                style={{ letterSpacing: 0.5 }}
+              >
+                Supplement tip
+              </Text>
             </View>
-            <Text style={styles.infoText}>{nutrient.supplementTip}</Text>
+            <Text className="text-[13px] text-text-secondary" style={{ lineHeight: 20 }}>
+              {nutrient.supplementTip}
+            </Text>
           </View>
         </View>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: Spacing.base, gap: Spacing.sm, paddingBottom: 48 },
-
-  headerCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.xs,
-  },
-  headerDate: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  headerSub: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-
-  nutrientCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  nutrientHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  nutrientNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flex: 1,
-  },
-  colorDot: { width: 8, height: 8, borderRadius: 4 },
-  nutrientName: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  unitBadge: {
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-  },
-  unitBadgeText: { fontSize: 10, fontWeight: '600' },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  statusBadge: {
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-  },
-  statusText: { fontSize: 11, fontWeight: '700' },
-
-  progressTrack: {
-    height: 6,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: Radius.full,
-  },
-  valueText: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textSecondary,
-  },
-
-  expandedSection: { gap: Spacing.md },
-  divider: { height: 1, backgroundColor: Colors.border },
-  infoBlock: { gap: Spacing.xs },
-  infoLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  infoLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  infoText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  foodSourcesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  foodChip: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  foodChipText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-
-  summaryCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,179,71,0.3)',
-    padding: Spacing.base,
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  summaryTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  summarySub: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: 2,
-  },
-  summaryNutrient: {
-    flex: 1,
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  summaryStatus: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.amber,
-  },
-
-  allGoodCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.mintMuted,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  allGoodTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.mint,
-  },
-  allGoodSub: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-});

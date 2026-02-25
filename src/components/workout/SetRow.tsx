@@ -3,11 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 import { ActiveSet } from '../../types';
 import { useSettingsStore } from '../../store/settingsStore';
 import { toDisplayWeightNumber, fromDisplayWeight } from '../../constants/units';
@@ -68,26 +67,30 @@ export function SetRow({
   }
 
   return (
-    <View style={[styles.row, set.isCompleted && styles.rowCompleted]}>
+    <View className={`flex-row items-center py-1 gap-1 ${set.isCompleted ? 'opacity-75' : ''}`}>
       {/* Set number / warmup indicator */}
       <TouchableOpacity
-        style={[styles.setNumCell, set.isWarmup && styles.warmupCell]}
+        className="items-center justify-center rounded-lg"
+        style={{
+          width: 32, height: 36,
+          backgroundColor: set.isWarmup ? Colors.warningMuted : Colors.surfaceElevated,
+        }}
         onPress={onToggleWarmup}
         onLongPress={onDelete}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Text style={[styles.setNum, set.isWarmup && styles.warmupText]}>
+        <Text className={`text-[13px] font-bold ${set.isWarmup ? 'text-warning' : 'text-text-secondary'}`}>
           {set.isWarmup ? 'W' : set.setNumber}
         </Text>
       </TouchableOpacity>
 
       {/* Previous */}
-      <View style={styles.prevCell}>
-        <Text style={styles.prevText}>{prevLabel}</Text>
+      <View className="flex-1 items-center">
+        <Text className="text-[13px] text-text-muted">{prevLabel}</Text>
       </View>
 
       {/* Weight */}
-      <View style={styles.inputCell}>
+      <View className="flex-1 items-center">
         <TextInput
           value={weightStr}
           onChangeText={setWeightStr}
@@ -98,13 +101,14 @@ export function SetRow({
           keyboardAppearance="dark"
           textAlign="center"
           selectTextOnFocus
-          style={[styles.input, set.isCompleted && styles.inputCompleted]}
+          className={`bg-surface-elevated rounded-lg border text-[17px] font-semibold text-center ${set.isCompleted ? 'border-accent text-text-secondary' : 'border-border text-text-primary'}`}
+          style={{ paddingHorizontal: 8, paddingVertical: 6, minWidth: 64 }}
           editable={!set.isCompleted}
         />
       </View>
 
       {/* Reps */}
-      <View style={styles.inputCell}>
+      <View className="flex-1 items-center">
         <TextInput
           value={repsStr}
           onChangeText={setRepsStr}
@@ -115,14 +119,16 @@ export function SetRow({
           keyboardAppearance="dark"
           textAlign="center"
           selectTextOnFocus
-          style={[styles.input, set.isCompleted && styles.inputCompleted]}
+          className={`bg-surface-elevated rounded-lg border text-[17px] font-semibold text-center ${set.isCompleted ? 'border-accent text-text-secondary' : 'border-border text-text-primary'}`}
+          style={{ paddingHorizontal: 8, paddingVertical: 6, minWidth: 64 }}
           editable={!set.isCompleted}
         />
       </View>
 
       {/* Complete */}
       <TouchableOpacity
-        style={[styles.checkCell, set.isCompleted && styles.checkCellActive]}
+        className="items-center justify-center"
+        style={{ width: 40, height: 36 }}
         onPress={set.isCompleted ? onUncomplete : onComplete}
       >
         <Ionicons
@@ -134,70 +140,3 @@ export function SetRow({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    gap: Spacing.xs,
-  },
-  rowCompleted: {
-    opacity: 0.75,
-  },
-  setNumCell: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 36,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  warmupCell: {
-    backgroundColor: Colors.warningMuted,
-  },
-  setNum: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  warmupText: {
-    color: Colors.warning,
-  },
-  prevCell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  prevText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-  },
-  inputCell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  input: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    fontSize: Typography.sizes.md,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    minWidth: 64,
-    textAlign: 'center',
-  },
-  inputCompleted: {
-    borderColor: Colors.accent,
-    color: Colors.textSecondary,
-  },
-  checkCell: {
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 36,
-  },
-  checkCellActive: {},
-});

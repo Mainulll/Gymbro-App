@@ -1,24 +1,17 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
-  lookupBarcode,
+  useBarcodeProduct,
   scaleNutrition,
   hasVitaminData,
   FoodProduct,
 } from '../../src/utils/openFoodFacts';
 import { setPendingCaloriePrefill } from '../../src/utils/caloriePrefill';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 
 type BarcodeResult = { type: string; data: string };
 
@@ -27,118 +20,82 @@ export default function BarcodeScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
 
   const [scanning, setScanning] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [found, setFound] = useState<FoodProduct | null>(null);
+  // Scanned barcode drives the TanStack query; null = camera idle
+  const [scannedCode, setScannedCode] = useState<string | null>(null);
 
-  // Prevent multiple concurrent lookups
+  // Prevent multiple concurrent lookups for the same scan event
   const scanLockRef = useRef(false);
-
-  // Prevent instant re-scan of the same barcode (common “loop” cause)
+  // Cooldown: ignore repeat scans of the same barcode within 2 s
   const lastScanRef = useRef<{ data: string; ts: number } | null>(null);
+  // Track which codes we've already shown an alert for (prevent double-firing)
+  const alertedRef = useRef<string | null>(null);
+
+  // TanStack Query — cached for 24 h so repeat scans are instant
+  const { data: product, isFetching } = useBarcodeProduct(scannedCode);
 
   const safeExit = useCallback(() => {
     scanLockRef.current = false;
-    setLoading(false);
     router.back();
   }, []);
 
   const resumeScanningWithDelay = useCallback((delayMs = 800) => {
     scanLockRef.current = false;
-    setLoading(false);
-
-    // Pause briefly so the camera doesn’t instantly re-fire on the same code
+    setScannedCode(null);
+    alertedRef.current = null;
     setScanning(false);
     setTimeout(() => setScanning(true), delayMs);
   }, []);
 
-  const handleBarcode = useCallback(
-    async ({ data }: BarcodeResult) => {
-      if (scanLockRef.current) return;
+  // Show not-found alert once query settles with null result
+  useEffect(() => {
+    if (!scannedCode || isFetching) return;
+    if (alertedRef.current === scannedCode) return;
 
-      // Cooldown for duplicate scans of the same code
-      const now = Date.now();
-      const last = lastScanRef.current;
-      if (last && last.data === data && now - last.ts < 2000) {
-        // Don’t keep the lock if we’re ignoring this scan
-        scanLockRef.current = false;
-        return;
-      }
-      lastScanRef.current = { data, ts: now };
-
-      scanLockRef.current = true;
-      setScanning(false);
-      setLoading(true);
-
-      try {
-        const product = await lookupBarcode(data);
-        setLoading(false);
-
-        if (!product) {
-          Alert.alert(
-            'Product Not Found',
-            "This barcode isn't in the Open Food Facts database.",
-            [
-              {
-                text: 'Search Manually',
-                onPress: () => {
-                  scanLockRef.current = false;
-                  setLoading(false);
-                  router.replace({
-                    pathname: '/food/search',
-                    params: { meal: meal ?? 'snack' },
-                  });
-                },
-              },
-              {
-                text: 'Scan Again',
-                onPress: () => resumeScanningWithDelay(800),
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel',
-                onPress: safeExit,
-              },
-            ],
-          );
-          return;
-        }
-
-        setFound(product);
-        // Keep lock true while showing result (camera is hidden anyway)
-      } catch {
-        setLoading(false);
-        Alert.alert(
-          'Scan Error',
-          'Could not look up barcode. Check your connection and try again.',
-          [
-            {
-              text: 'Scan Again',
-              onPress: () => resumeScanningWithDelay(800),
+    if (product === null) {
+      alertedRef.current = scannedCode;
+      Alert.alert(
+        'Product Not Found',
+        "This barcode isn't in the Open Food Facts database.",
+        [
+          {
+            text: 'Search Manually',
+            onPress: () => {
+              scanLockRef.current = false;
+              router.replace({ pathname: '/food/search', params: { meal: meal ?? 'snack' } });
             },
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: safeExit,
-            },
-          ],
-        );
-      }
-    },
-    [meal, resumeScanningWithDelay, safeExit],
-  );
+          },
+          { text: 'Scan Again', onPress: () => resumeScanningWithDelay(800) },
+          { text: 'Cancel', style: 'cancel', onPress: safeExit },
+        ],
+      );
+    }
+  }, [scannedCode, isFetching, product, meal, resumeScanningWithDelay, safeExit]);
 
-  function handleAdd(product: FoodProduct) {
-    const scaled = scaleNutrition(product, product.servingSize);
+  const handleBarcode = useCallback(({ data }: BarcodeResult) => {
+    if (scanLockRef.current) return;
 
+    // 2-second cooldown for same barcode
+    const now = Date.now();
+    const last = lastScanRef.current;
+    if (last && last.data === data && now - last.ts < 2000) return;
+    lastScanRef.current = { data, ts: now };
+
+    scanLockRef.current = true;
+    setScanning(false);
+    setScannedCode(data);
+  }, []);
+
+  function handleAdd(found: FoodProduct) {
+    const scaled = scaleNutrition(found, found.servingSize);
     setPendingCaloriePrefill({
       meal: meal ?? 'snack',
-      foodName: product.brand ? `${product.name} — ${product.brand}` : product.name,
+      foodName: found.brand ? `${found.name} — ${found.brand}` : found.name,
       calories: String(scaled.calories),
       protein: String(scaled.protein),
       carbs: String(scaled.carbs),
       fat: String(scaled.fat),
-      servingSize: String(product.servingSize),
-      servingUnit: product.servingUnit,
+      servingSize: String(found.servingSize),
+      servingUnit: found.servingUnit,
       vitaminD: scaled.vitaminD !== null ? String(scaled.vitaminD) : undefined,
       vitaminB12: scaled.vitaminB12 !== null ? String(scaled.vitaminB12) : undefined,
       vitaminC: scaled.vitaminC !== null ? String(scaled.vitaminC) : undefined,
@@ -148,28 +105,35 @@ export default function BarcodeScanScreen() {
       potassium: scaled.potassium !== null ? String(scaled.potassium) : undefined,
       zinc: scaled.zinc !== null ? String(scaled.zinc) : undefined,
     });
-
     router.back();
   }
 
-  if (!permission) return <View style={styles.container} />;
+  // Derived: only show result card when query has settled with a real product
+  const found = scannedCode && !isFetching && product ? product : null;
+
+  if (!permission) return <View className="flex-1 bg-black" />;
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.permText}>Camera permission required to scan barcodes</Text>
-        <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
-          <Text style={styles.permBtnText}>Grant Permission</Text>
+      <View className="flex-1 bg-black items-center justify-center gap-4">
+        <Text className="text-white text-[15px] text-center mx-6">
+          Camera permission required to scan barcodes
+        </Text>
+        <TouchableOpacity
+          className="bg-accent rounded-xl px-6 py-3"
+          onPress={requestPermission}
+        >
+          <Text className="text-white font-bold text-[15px]">Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-black">
       {!found && (
         <CameraView
-          style={StyleSheet.absoluteFill}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           facing="back"
           onBarcodeScanned={scanning ? handleBarcode : undefined}
           barcodeScannerSettings={{
@@ -179,46 +143,60 @@ export default function BarcodeScanScreen() {
       )}
 
       {/* Top bar */}
-      <View style={styles.topBar}>
+      <View
+        className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4 pb-3"
+        style={{ paddingTop: 60, backgroundColor: 'rgba(0,0,0,0.5)' }}
+      >
         <TouchableOpacity
-          onPress={() => {
-            scanLockRef.current = false;
-            setLoading(false);
-            router.back();
-          }}
-          style={styles.topBtn}
+          className="w-11 h-11 items-center justify-center"
+          onPress={() => { scanLockRef.current = false; router.back(); }}
         >
           <Ionicons name="close" size={28} color="white" />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Scan Barcode</Text>
+        <Text className="text-white text-[15px] font-bold">Scan Barcode</Text>
         <View style={{ width: 44 }} />
       </View>
 
       {/* Loading spinner */}
-      {loading && (
-        <View style={styles.overlay}>
+      {isFetching && (
+        <View
+          className="absolute inset-0 items-center justify-center gap-3"
+          style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+        >
           <ActivityIndicator size="large" color={Colors.accent} />
-          <Text style={styles.loadingText}>Looking up product…</Text>
+          <Text className="text-white text-[15px]">Looking up product…</Text>
         </View>
       )}
 
       {/* Scan frame guide */}
-      {!found && !loading && (
-        <View style={styles.frameGuide}>
-          <View style={styles.frame} />
-          <Text style={styles.hint}>Point at a barcode or QR code</Text>
+      {!found && !isFetching && (
+        <View className="absolute inset-0 items-center justify-center gap-4">
+          <View
+            className="border-2 border-accent rounded-xl bg-transparent"
+            style={{ width: 260, height: 160 }}
+          />
+          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
+            Point at a barcode or QR code
+          </Text>
         </View>
       )}
 
-      {/* Product result */}
+      {/* Product result card */}
       {found && (
-        <View style={styles.resultCard}>
-          <Text style={styles.productName} numberOfLines={2}>
+        <View
+          className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-[20px] p-6 gap-3"
+          style={{ paddingBottom: 48 }}
+        >
+          <Text className="text-[24px] font-bold text-text-primary" numberOfLines={2}>
             {found.name}
           </Text>
-          {!!found.brand && <Text style={styles.brandName}>{found.brand}</Text>}
+          {!!found.brand && (
+            <Text className="text-[13px] text-text-secondary" style={{ marginTop: -8 }}>
+              {found.brand}
+            </Text>
+          )}
 
-          <View style={styles.macrosRow}>
+          <View className="flex-row gap-2 bg-surface-elevated rounded-xl p-3">
             <MacroChip
               label="Cal"
               value={`${Math.round((found.caloriesPer100g * found.servingSize) / 100)}`}
@@ -241,34 +219,35 @@ export default function BarcodeScanScreen() {
             />
           </View>
 
-          <Text style={styles.servingNote}>
-            Per serving ({found.servingSize}
-            {found.servingUnit})
+          <Text className="text-[11px] text-text-muted text-center">
+            Per serving ({found.servingSize}{found.servingUnit})
           </Text>
 
           {hasVitaminData(found) && (
-            <View style={styles.vitaminBadge}>
+            <View
+              className="flex-row items-center gap-1 bg-teal/15 rounded-full self-start px-2"
+              style={{ paddingVertical: 3 }}
+            >
               <Ionicons name="leaf-outline" size={12} color={Colors.teal} />
-              <Text style={styles.vitaminBadgeText}>Vitamin & mineral data available</Text>
+              <Text className="text-[11px] font-semibold text-teal">
+                Vitamin & mineral data available
+              </Text>
             </View>
           )}
 
-          <View style={styles.resultBtns}>
+          <View className="flex-row gap-2">
             <TouchableOpacity
-              style={styles.scanAgainBtn}
-              onPress={() => {
-                setFound(null);
-                scanLockRef.current = false;
-                lastScanRef.current = null;
-                setScanning(false);
-                setTimeout(() => setScanning(true), 800);
-              }}
+              className="flex-1 py-3 rounded-xl bg-surface-elevated items-center border border-border"
+              onPress={() => resumeScanningWithDelay(800)}
             >
-              <Text style={styles.scanAgainText}>Scan Again</Text>
+              <Text className="text-text-secondary font-semibold text-[15px]">Scan Again</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.addBtn} onPress={() => handleAdd(found)}>
-              <Text style={styles.addBtnText}>Add to Log</Text>
+            <TouchableOpacity
+              className="rounded-xl items-center py-3 bg-accent"
+              style={{ flex: 2 }}
+              onPress={() => handleAdd(found)}
+            >
+              <Text className="text-white font-bold text-[15px]">Add to Log</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -279,142 +258,10 @@ export default function BarcodeScanScreen() {
 
 function MacroChip({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <View style={chipStyles.chip}>
-      <Text style={chipStyles.label}>{label}</Text>
-      <Text style={chipStyles.value}>{value}</Text>
-      <Text style={chipStyles.unit}>{unit}</Text>
+    <View className="items-center flex-1 gap-0.5">
+      <Text className="text-[10px] text-text-muted uppercase tracking-[0.4px]">{label}</Text>
+      <Text className="text-[20px] font-bold text-text-primary">{value}</Text>
+      <Text className="text-[10px] text-text-secondary">{unit}</Text>
     </View>
   );
 }
-
-const chipStyles = StyleSheet.create({
-  chip: { alignItems: 'center', flex: 1, gap: 2 },
-  label: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  value: { fontSize: Typography.sizes.lg, fontWeight: '700', color: Colors.textPrimary },
-  unit: { fontSize: 10, color: Colors.textSecondary },
-});
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  topBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  topTitle: { fontSize: Typography.sizes.base, fontWeight: '700', color: 'white' },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
-  },
-  loadingText: { color: 'white', fontSize: Typography.sizes.base },
-  frameGuide: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.base,
-  },
-  frame: {
-    width: 260,
-    height: 160,
-    borderWidth: 2,
-    borderColor: Colors.accent,
-    borderRadius: Radius.md,
-    backgroundColor: 'transparent',
-  },
-  hint: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.sizes.sm },
-  resultCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    padding: Spacing.xl,
-    gap: Spacing.md,
-    paddingBottom: 48,
-  },
-  productName: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  brandName: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    marginTop: -Spacing.sm,
-  },
-  macrosRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-  },
-  servingNote: { fontSize: Typography.sizes.xs, color: Colors.textMuted, textAlign: 'center' },
-  resultBtns: { flexDirection: 'row', gap: Spacing.sm },
-  scanAgainBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  scanAgainText: { color: Colors.textSecondary, fontWeight: '600', fontSize: Typography.sizes.base },
-  addBtn: {
-    flex: 2,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-  },
-  addBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
-  permText: {
-    color: 'white',
-    fontSize: Typography.sizes.base,
-    textAlign: 'center',
-    margin: Spacing.xl,
-  },
-  permBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    alignSelf: 'center',
-  },
-  permBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
-  vitaminBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.tealMuted,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-  },
-  vitaminBadgeText: { fontSize: 11, fontWeight: '600', color: Colors.teal },
-});

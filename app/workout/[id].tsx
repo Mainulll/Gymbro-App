@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Modal,
@@ -22,7 +21,7 @@ import { WorkoutSession, WorkoutExercise, WorkoutSet, ExerciseVideo, ProgressPho
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Divider } from '../../src/components/ui/Divider';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 import { formatDisplayDate, formatDurationMinutes, formatTime } from '../../src/utils/date';
 import { formatVolume } from '../../src/constants/units';
 import { useSettingsStore } from '../../src/store/settingsStore';
@@ -41,16 +40,23 @@ function VideoPlayerModal({ uri, onClose }: { uri: string; onClose: () => void }
 
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose}>
-      <View style={modalStyles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: 'rgba(0,0,0,0.92)' }}
+      >
+        <TouchableOpacity className="absolute inset-0" onPress={onClose} activeOpacity={1} />
         <VideoView
           player={player}
-          style={modalStyles.video}
+          style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * (9 / 16) }}
           allowsFullscreen
           allowsPictureInPicture={false}
           contentFit="contain"
         />
-        <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
+        <TouchableOpacity
+          className="absolute"
+          style={{ top: 60, right: 20 }}
+          onPress={onClose}
+        >
           <Ionicons name="close-circle" size={36} color="white" />
         </TouchableOpacity>
       </View>
@@ -95,8 +101,8 @@ export default function WorkoutDetailScreen() {
 
   if (!session) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loading}>Loading...</Text>
+      <View className="flex-1 bg-background">
+        <Text className="text-text-secondary text-center mt-10">Loading...</Text>
       </View>
     );
   }
@@ -113,16 +119,18 @@ export default function WorkoutDetailScreen() {
           headerTintColor: Colors.textPrimary,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 48 }}>
           {/* Summary card */}
-          <Card style={styles.summaryCard}>
-            <Text style={styles.workoutTitle}>{session.name || 'Workout'}</Text>
-            <Text style={styles.workoutDate}>
+          <Card style={{ gap: 12 }}>
+            <Text className="text-[24px] font-bold text-text-primary">
+              {session.name || 'Workout'}
+            </Text>
+            <Text className="text-[13px] text-text-secondary -mt-2">
               {formatDisplayDate(session.startedAt)} · {formatTime(session.startedAt)}
             </Text>
 
-            <View style={styles.statsGrid}>
+            <View className="flex-row gap-2">
               <StatBox label="Duration" value={formatDurationMinutes(session.durationSeconds)} />
               <StatBox label="Exercises" value={String(exercises.length)} />
               <StatBox label="Sets" value={String(completedSets.length)} />
@@ -132,113 +140,158 @@ export default function WorkoutDetailScreen() {
 
           {/* Notes */}
           {session.notes ? (
-            <Card style={styles.notesCard}>
-              <View style={styles.notesHeader}>
+            <Card style={{ gap: 8 }}>
+              <View className="flex-row items-center gap-1">
                 <Ionicons name="document-text-outline" size={16} color={Colors.textMuted} />
-                <Text style={styles.notesLabel}>Notes</Text>
+                <Text
+                  className="text-[11px] font-bold text-text-muted uppercase"
+                  style={{ letterSpacing: 0.5 }}
+                >
+                  Notes
+                </Text>
               </View>
-              <Text style={styles.notesText}>{session.notes}</Text>
+              <Text className="text-[15px] text-text-secondary" style={{ lineHeight: 22 }}>
+                {session.notes}
+              </Text>
             </Card>
           ) : null}
 
           {/* Progress photos */}
           {photos.length > 0 && (
-            <View style={styles.photosSection}>
-              <Text style={styles.sectionTitle}>Progress Photos</Text>
+            <View className="gap-2">
+              <Text
+                className="text-[11px] font-bold text-text-muted uppercase"
+                style={{ letterSpacing: 0.5 }}
+              >
+                Progress Photos
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.photoCarousel}
+                contentContainerStyle={{ gap: 8 }}
               >
                 {photos.map((p) => (
-                  <Image key={p.id} source={{ uri: p.localUri }} style={styles.photoThumb} />
+                  <Image
+                    key={p.id}
+                    source={{ uri: p.localUri }}
+                    style={{ width: 130, height: 170, borderRadius: 16, backgroundColor: Colors.surfaceElevated }}
+                  />
                 ))}
               </ScrollView>
             </View>
           )}
 
           {/* Exercises */}
-          {exercises.map((ex) => {
-            const workingSets = ex.sets.filter((s) => !s.isWarmup && s.isCompleted);
-            return (
-              <Card key={ex.id} style={styles.exerciseCard}>
-                <View style={styles.exHeader}>
-                  <Text style={styles.exName}>{ex.exerciseName}</Text>
-                  <Badge label={ex.muscleGroup.replace('_', ' ')} variant="accent" />
-                </View>
+          {exercises.map((ex) => (
+            <Card key={ex.id} style={{ gap: 12 }}>
+              <View className="flex-row items-center justify-between gap-2">
+                <Text className="flex-1 text-[17px] font-bold text-text-primary">
+                  {ex.exerciseName}
+                </Text>
+                <Badge label={ex.muscleGroup.replace('_', ' ')} variant="accent" />
+              </View>
 
-                {/* Set table */}
-                <View style={styles.setTable}>
-                  <View style={styles.setHeaderRow}>
-                    <Text style={[styles.setCell, styles.setColNum]}>Set</Text>
-                    <Text style={[styles.setCell, { flex: 1 }]}>Weight</Text>
-                    <Text style={[styles.setCell, { flex: 1 }]}>Reps</Text>
-                    <Text style={[styles.setCell, { flex: 1 }]}>Volume</Text>
-                  </View>
-                  <Divider />
-                  {ex.sets.map((s) => {
-                    const displayW = toDisplayWeightNumber(s.weightKg, unit);
-                    const volume = s.weightKg && s.reps
+              {/* Set table */}
+              <View className="gap-0.5">
+                <View className="flex-row gap-2 pb-0.5">
+                  <Text
+                    className="text-[13px] font-bold text-text-muted text-center"
+                    style={{ width: 28 }}
+                  >
+                    Set
+                  </Text>
+                  <Text className="flex-1 text-[13px] text-text-secondary">Weight</Text>
+                  <Text className="flex-1 text-[13px] text-text-secondary">Reps</Text>
+                  <Text className="flex-1 text-[13px] text-text-secondary">Volume</Text>
+                </View>
+                <Divider />
+                {ex.sets.map((s) => {
+                  const displayW = toDisplayWeightNumber(s.weightKg, unit);
+                  const volume =
+                    s.weightKg && s.reps
                       ? toDisplayWeightNumber(s.weightKg * s.reps, unit)
                       : null;
-                    return (
-                      <View key={s.id} style={styles.setRow}>
-                        <Text style={[styles.setCell, styles.setColNum, s.isWarmup && styles.warmupLabel]}>
-                          {s.isWarmup ? 'W' : s.setNumber}
-                        </Text>
-                        <Text style={[styles.setCell, { flex: 1 }]}>
-                          {displayW != null ? `${displayW} ${unit}` : '—'}
-                        </Text>
-                        <Text style={[styles.setCell, { flex: 1 }]}>
-                          {s.reps ?? '—'}
-                        </Text>
-                        <Text style={[styles.setCell, { flex: 1 }]}>
-                          {volume != null ? `${volume} ${unit}` : '—'}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
+                  return (
+                    <View key={s.id} className="flex-row gap-2 py-1">
+                      <Text
+                        className={`text-[13px] font-bold text-center ${s.isWarmup ? 'text-warning' : 'text-text-muted'}`}
+                        style={{ width: 28 }}
+                      >
+                        {s.isWarmup ? 'W' : s.setNumber}
+                      </Text>
+                      <Text className="flex-1 text-[13px] text-text-secondary">
+                        {displayW != null ? `${displayW} ${unit}` : '—'}
+                      </Text>
+                      <Text className="flex-1 text-[13px] text-text-secondary">
+                        {s.reps ?? '—'}
+                      </Text>
+                      <Text className="flex-1 text-[13px] text-text-secondary">
+                        {volume != null ? `${volume} ${unit}` : '—'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
 
-                {/* Exercise videos */}
-                {ex.videos.length > 0 && (
-                  <View style={styles.videosSection}>
-                    <Text style={styles.videosLabel}>Recordings</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.videosRow}
-                    >
-                      {ex.videos.map((v) => (
-                        <TouchableOpacity
-                          key={v.id}
-                          style={styles.videoThumbContainer}
-                          onPress={() => setPlayingVideoUri(v.localUri)}
-                          activeOpacity={0.85}
+              {/* Exercise videos */}
+              {ex.videos.length > 0 && (
+                <View className="gap-2">
+                  <Text
+                    className="text-[11px] font-bold text-text-muted uppercase"
+                    style={{ letterSpacing: 0.5 }}
+                  >
+                    Recordings
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {ex.videos.map((v) => (
+                      <TouchableOpacity
+                        key={v.id}
+                        className="rounded-xl overflow-hidden"
+                        style={{ width: 120, height: 90, backgroundColor: Colors.surfaceElevated }}
+                        onPress={() => setPlayingVideoUri(v.localUri)}
+                        activeOpacity={0.85}
+                      >
+                        {v.thumbnailUri ? (
+                          <Image source={{ uri: v.thumbnailUri }} className="w-full h-full" />
+                        ) : (
+                          <View
+                            className="w-full h-full"
+                            style={{ backgroundColor: Colors.surfaceElevated }}
+                          />
+                        )}
+                        <View
+                          className="absolute inset-0 items-center justify-center"
+                          style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
                         >
-                          {v.thumbnailUri ? (
-                            <Image source={{ uri: v.thumbnailUri }} style={styles.videoThumb} />
-                          ) : (
-                            <View style={[styles.videoThumb, styles.videoThumbPlaceholder]} />
-                          )}
-                          <View style={styles.playOverlay}>
-                            <Ionicons name="play-circle" size={36} color="white" />
+                          <Ionicons name="play-circle" size={36} color="white" />
+                        </View>
+                        {v.durationSeconds > 0 && (
+                          <View
+                            className="absolute rounded"
+                            style={{
+                              bottom: 4,
+                              right: 6,
+                              backgroundColor: 'rgba(0,0,0,0.6)',
+                              paddingHorizontal: 4,
+                              paddingVertical: 1,
+                            }}
+                          >
+                            <Text className="text-[11px] text-white font-semibold">
+                              {Math.round(v.durationSeconds)}s
+                            </Text>
                           </View>
-                          {v.durationSeconds > 0 && (
-                            <View style={styles.durationBadge}>
-                              <Text style={styles.durationText}>
-                                {Math.round(v.durationSeconds)}s
-                              </Text>
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </Card>
-            );
-          })}
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </Card>
+          ))}
         </ScrollView>
       </SafeAreaView>
 
@@ -252,176 +305,9 @@ export default function WorkoutDetailScreen() {
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.statBox}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View className="flex-1 bg-surface-elevated rounded-xl p-3 items-center">
+      <Text className="text-[20px] font-bold text-text-primary">{value}</Text>
+      <Text className="text-[11px] text-text-muted mt-0.5">{label}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  loading: { color: Colors.textSecondary, textAlign: 'center', marginTop: 40 },
-  content: { padding: Spacing.base, gap: Spacing.md, paddingBottom: Spacing.xxxl },
-  summaryCard: { gap: Spacing.md },
-  workoutTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  workoutDate: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    marginTop: -Spacing.sm,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  notesCard: { gap: Spacing.sm },
-  notesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  notesLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  notesText: {
-    fontSize: Typography.sizes.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  photosSection: { gap: Spacing.sm },
-  sectionTitle: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  photoCarousel: { gap: Spacing.sm },
-  photoThumb: {
-    width: 130,
-    height: 170,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  exerciseCard: { gap: Spacing.md },
-  exHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  exName: {
-    flex: 1,
-    fontSize: Typography.sizes.md,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  setTable: { gap: 2 },
-  setHeaderRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingBottom: 2,
-  },
-  setRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingVertical: 4,
-  },
-  setCell: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-  },
-  setColNum: {
-    width: 28,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  warmupLabel: { color: Colors.warning },
-  videosSection: { gap: Spacing.sm },
-  videosLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  videosRow: { gap: Spacing.sm },
-  videoThumbContainer: {
-    width: 120,
-    height: 90,
-    borderRadius: Radius.md,
-    overflow: 'hidden',
-    backgroundColor: Colors.surfaceElevated,
-  },
-  videoThumb: {
-    width: '100%',
-    height: '100%',
-  },
-  videoThumbPlaceholder: {
-    backgroundColor: Colors.surfaceElevated,
-  },
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  durationBadge: {
-    position: 'absolute',
-    bottom: 4,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: Radius.xs,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  durationText: {
-    fontSize: Typography.sizes.xs,
-    color: 'white',
-    fontWeight: '600',
-  },
-});
-
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  video: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * (9 / 16),
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-  },
-});

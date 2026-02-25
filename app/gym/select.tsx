@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   Platform,
@@ -23,7 +22,7 @@ import { getDatabase } from '../../src/db';
 import { CustomGym } from '../../src/types';
 import { generateId } from '../../src/utils/uuid';
 import { useSettingsStore } from '../../src/store/settingsStore';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 
 interface GymWithCount extends OSMGym {
   checkinCount?: number;
@@ -97,15 +96,16 @@ export default function GymSelectScreen() {
     setGyms(withCounts);
   }
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchText(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      if (userLat && userLng) {
-        fetchGyms(userLat, userLng, text);
-      }
-    }, 500);
-  }, [userLat, userLng]);
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (userLat && userLng) fetchGyms(userLat, userLng, text);
+      }, 500);
+    },
+    [userLat, userLng],
+  );
 
   async function handleSelectGym(gym: GymWithCount) {
     if (isCheckInMode) {
@@ -168,7 +168,6 @@ export default function GymSelectScreen() {
     setAddAddress('');
   }
 
-  // Build combined list: custom gyms first (filtered by search), then OSM results
   const filteredCustom = customGyms
     .filter((g) => !searchText || g.name.toLowerCase().includes(searchText.toLowerCase()))
     .map<GymWithCount>((g) => ({
@@ -194,16 +193,20 @@ export default function GymSelectScreen() {
           headerTintColor: Colors.textPrimary,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Search bar */}
-        <View style={styles.searchBar}>
+        <View
+          className="flex-row items-center gap-2 bg-surface-elevated rounded-2xl mx-4 px-3 border border-border"
+          style={{ paddingVertical: Platform.OS === 'ios' ? 8 : 4 }}
+        >
           <Ionicons name="search-outline" size={18} color={Colors.textMuted} />
           <TextInput
             value={searchText}
             onChangeText={handleSearchChange}
             placeholder="Search gyms by name…"
             placeholderTextColor={Colors.textMuted}
-            style={styles.searchInput}
+            className="flex-1 text-[15px] text-text-primary"
+            style={{ height: 36 }}
             keyboardAppearance="dark"
             clearButtonMode="while-editing"
           />
@@ -211,9 +214,12 @@ export default function GymSelectScreen() {
         </View>
 
         {locationDenied && (
-          <View style={styles.locationBanner}>
+          <View
+            className="flex-row items-start gap-1 mx-4 mb-2 p-2 rounded-xl border"
+            style={{ backgroundColor: Colors.amberMuted, borderColor: 'rgba(255,179,71,0.3)' }}
+          >
             <Ionicons name="location-outline" size={14} color={Colors.amber} />
-            <Text style={styles.locationBannerText}>
+            <Text className="flex-1 text-[11px] text-amber leading-4">
               Location access denied — showing results near your home gym or use the search above.
             </Text>
           </View>
@@ -222,24 +228,30 @@ export default function GymSelectScreen() {
         <FlatList
           data={allGyms}
           keyExtractor={(g) => g.osmId}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
-            <TouchableOpacity style={styles.addCustomBtn} onPress={() => setShowAddSheet(true)}>
+            <TouchableOpacity
+              className="flex-row items-center gap-1 py-2 mb-1"
+              onPress={() => setShowAddSheet(true)}
+            >
               <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
-              <Text style={styles.addCustomBtnText}>Add Custom Gym</Text>
+              <Text className="text-[13px] font-semibold text-accent">Add Custom Gym</Text>
             </TouchableOpacity>
           }
           ListEmptyComponent={
             !loading ? (
-              <View style={styles.emptyState}>
+              <View className="items-center justify-center gap-3 p-6 pt-6">
                 <Ionicons name="location-outline" size={48} color={Colors.textMuted} />
-                <Text style={styles.emptyTitle}>No gyms found nearby</Text>
-                <Text style={styles.emptySub}>
+                <Text className="text-[20px] font-bold text-text-secondary">No gyms found nearby</Text>
+                <Text className="text-[13px] text-text-muted text-center leading-5">
                   Try searching by gym name, or check that location permission is granted.
                 </Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={requestLocationAndSearch}>
-                  <Text style={styles.retryText}>Retry</Text>
+                <TouchableOpacity
+                  className="bg-accent rounded-xl px-6 py-3 mt-2"
+                  onPress={requestLocationAndSearch}
+                >
+                  <Text className="text-[15px] font-bold text-white">Retry</Text>
                 </TouchableOpacity>
               </View>
             ) : null
@@ -248,45 +260,53 @@ export default function GymSelectScreen() {
             const isHomeGym = settings.homeGymId === gym.osmId;
             const isCheckingIn = checkingIn === gym.osmId;
             return (
-              <View style={styles.gymCard}>
-                <View style={styles.gymInfo}>
-                  <View style={styles.gymNameRow}>
-                    <Text style={styles.gymName} numberOfLines={1}>{gym.name}</Text>
+              <View className="flex-row items-center bg-surface rounded-2xl border border-border p-3 gap-3">
+                <View className="flex-1 gap-0.5">
+                  <View className="flex-row items-center gap-1 flex-wrap">
+                    <Text className="flex-1 text-[15px] font-bold text-text-primary" numberOfLines={1}>
+                      {gym.name}
+                    </Text>
                     {isHomeGym && (
-                      <View style={styles.homeBadge}>
-                        <Text style={styles.homeBadgeText}>Home</Text>
+                      <View className="rounded-full px-1 py-0.5" style={{ backgroundColor: Colors.accentMuted }}>
+                        <Text className="text-[10px] font-bold text-accent">Home</Text>
                       </View>
                     )}
                     {gym.isCustom && (
-                      <View style={styles.customBadge}>
-                        <Text style={styles.customBadgeText}>Custom</Text>
+                      <View className="rounded-full px-1 py-0.5" style={{ backgroundColor: Colors.amberMuted }}>
+                        <Text className="text-[10px] font-bold text-amber">Custom</Text>
                       </View>
                     )}
                   </View>
                   {gym.address && (
-                    <Text style={styles.gymAddress} numberOfLines={1}>{gym.address}</Text>
+                    <Text className="text-[11px] text-text-muted" numberOfLines={1}>{gym.address}</Text>
                   )}
-                  <View style={styles.gymMeta}>
+                  <View className="flex-row items-center gap-2 mt-0.5">
                     {gym.distanceKm !== undefined && (
-                      <Text style={styles.gymDist}>{gym.distanceKm.toFixed(1)} km away</Text>
+                      <Text className="text-[11px] text-text-secondary">{gym.distanceKm.toFixed(1)} km away</Text>
                     )}
                     {gym.checkinCount === 1 && (
-                      <View style={styles.countBadge}>
+                      <View
+                        className="flex-row items-center rounded-full px-1 py-0.5"
+                        style={{ gap: 3, backgroundColor: Colors.tealMuted }}
+                      >
                         <Ionicons name="checkmark-circle-outline" size={11} color={Colors.teal} />
-                        <Text style={styles.countText}>You've been here today</Text>
+                        <Text className="text-[10px] font-semibold text-teal">You've been here today</Text>
                       </View>
                     )}
                   </View>
                 </View>
                 <TouchableOpacity
-                  style={[styles.selectBtn, isHomeGym && !isCheckInMode && styles.selectBtnSelected]}
+                  className={`rounded-xl px-3 py-2 items-center ${
+                    isHomeGym && !isCheckInMode ? 'bg-mint' : 'bg-accent'
+                  }`}
+                  style={{ minWidth: 70 }}
                   onPress={() => handleSelectGym(gym)}
                   disabled={isCheckingIn}
                 >
                   {isCheckingIn ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text style={styles.selectBtnText}>
+                    <Text className="text-[13px] font-bold text-white">
                       {isCheckInMode ? 'Check In' : isHomeGym ? 'Selected' : 'Set'}
                     </Text>
                   )}
@@ -306,49 +326,65 @@ export default function GymSelectScreen() {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          className="flex-1 justify-end"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
         >
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Add Custom Gym</Text>
+          <View
+            className="bg-surface gap-2"
+            style={{
+              padding: 20,
+              paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+            }}
+          >
+            <View className="w-9 h-1 rounded-full bg-border self-center mb-2" />
+            <Text className="text-[20px] font-bold text-text-primary mb-1">Add Custom Gym</Text>
 
-            <Text style={styles.sheetLabel}>Name *</Text>
+            <Text className="text-[13px] font-semibold text-text-secondary mt-1">Name *</Text>
             <TextInput
               value={addName}
               onChangeText={setAddName}
               placeholder="e.g. Home Garage Gym"
               placeholderTextColor={Colors.textMuted}
-              style={styles.sheetInput}
+              className="bg-surface-elevated rounded-xl border border-border px-3 text-[15px] text-text-primary"
+              style={{ paddingVertical: 8, height: 44 }}
               keyboardAppearance="dark"
               autoFocus
               returnKeyType="next"
             />
 
-            <Text style={styles.sheetLabel}>Address (optional)</Text>
+            <Text className="text-[13px] font-semibold text-text-secondary mt-1">Address (optional)</Text>
             <TextInput
               value={addAddress}
               onChangeText={setAddAddress}
               placeholder="e.g. 123 Main St, Sydney"
               placeholderTextColor={Colors.textMuted}
-              style={styles.sheetInput}
+              className="bg-surface-elevated rounded-xl border border-border px-3 text-[15px] text-text-primary"
+              style={{ paddingVertical: 8, height: 44 }}
               keyboardAppearance="dark"
               returnKeyType="done"
               onSubmitEditing={handleAddCustomGym}
             />
 
-            <View style={styles.sheetActions}>
-              <TouchableOpacity style={styles.sheetCancelBtn} onPress={dismissAddSheet}>
-                <Text style={styles.sheetCancelText}>Cancel</Text>
+            <View className="flex-row gap-2 mt-3">
+              <TouchableOpacity
+                className="flex-1 py-3 rounded-xl items-center bg-surface-elevated border border-border"
+                onPress={dismissAddSheet}
+              >
+                <Text className="text-[15px] font-semibold text-text-secondary">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.sheetSaveBtn, (!addName.trim() || saving) && { opacity: 0.5 }]}
+                className={`flex-1 py-3 rounded-xl items-center bg-accent${
+                  !addName.trim() || saving ? ' opacity-50' : ''
+                }`}
                 onPress={handleAddCustomGym}
                 disabled={!addName.trim() || saving}
               >
                 {saving ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text style={styles.sheetSaveText}>Save Gym</Text>
+                  <Text className="text-[15px] font-bold text-white">Save Gym</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -358,194 +394,3 @@ export default function GymSelectScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    margin: Spacing.base,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? Spacing.sm : 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-    height: 36,
-  },
-  locationBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.xs,
-    backgroundColor: Colors.amberMuted,
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,179,71,0.3)',
-  },
-  locationBannerText: { flex: 1, fontSize: Typography.sizes.xs, color: Colors.amber, lineHeight: 16 },
-  list: { paddingHorizontal: Spacing.base, gap: Spacing.sm, paddingBottom: 40 },
-  addCustomBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  addCustomBtnText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  gymCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  gymInfo: { flex: 1, gap: 3 },
-  gymNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' },
-  gymName: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
-  gymAddress: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  gymMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 2 },
-  gymDist: { fontSize: Typography.sizes.xs, color: Colors.textSecondary },
-  countBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: Colors.tealMuted,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-  },
-  countText: { fontSize: 10, fontWeight: '600', color: Colors.teal },
-  homeBadge: {
-    backgroundColor: Colors.accentMuted,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 1,
-  },
-  homeBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.accent },
-  customBadge: {
-    backgroundColor: Colors.amberMuted,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 1,
-  },
-  customBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.amber },
-  selectBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    minWidth: 70,
-    alignItems: 'center',
-  },
-  selectBtnSelected: { backgroundColor: Colors.mint },
-  selectBtnText: { fontSize: Typography.sizes.sm, fontWeight: '700', color: 'white' },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
-    padding: Spacing.xl,
-    paddingTop: Spacing.xl,
-  },
-  emptyTitle: { fontSize: Typography.sizes.lg, fontWeight: '700', color: Colors.textSecondary },
-  emptySub: { fontSize: Typography.sizes.sm, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  retryBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  retryText: { fontSize: Typography.sizes.base, fontWeight: '700', color: 'white' },
-  // Modal / Sheet
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    padding: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
-    gap: Spacing.sm,
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginBottom: Spacing.sm,
-  },
-  sheetTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  sheetLabel: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
-  sheetInput: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-    height: 44,
-  },
-  sheetActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  sheetCancelBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sheetCancelText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  sheetSaveBtn: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    backgroundColor: Colors.accent,
-  },
-  sheetSaveText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: 'white',
-  },
-});

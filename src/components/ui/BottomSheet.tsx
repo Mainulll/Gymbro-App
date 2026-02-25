@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Modal,
   Animated,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Radius, Spacing, Typography } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
@@ -70,28 +69,28 @@ export function BottomSheet({
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
       {/* Blurred backdrop */}
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
-        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+      <Animated.View className="absolute inset-0" style={{ opacity: opacityAnim }}>
+        <BlurView intensity={25} tint="dark" className="absolute inset-0" />
+        <View className="absolute inset-0 bg-[rgba(0,0,0,0.55)]" />
       </Animated.View>
 
       {/* Tap-to-dismiss */}
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
+      <Animated.View className="absolute inset-0" style={{ opacity: opacityAnim }}>
         <TouchableWithoutFeedback onPress={onClose}>
-          <View style={StyleSheet.absoluteFill} />
+          <View className="absolute inset-0" />
         </TouchableWithoutFeedback>
       </Animated.View>
 
       {/* Sheet */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavContainer}
-        pointerEvents="box-none"
+        className="flex-1 justify-end"
+        style={{ pointerEvents: 'box-none' } as any}
       >
         <Animated.View
+          className="bg-surface rounded-t-3xl border border-[rgba(255,255,255,0.12)] overflow-hidden pb-10"
           style={[
-            styles.sheet,
-            snapHeight !== 'auto' && { height: snapHeight },
+            snapHeight !== 'auto' ? { height: snapHeight } : null,
             { transform: [{ translateY: slideAnim }] },
           ]}
         >
@@ -100,21 +99,39 @@ export function BottomSheet({
             colors={['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.01)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.glassHighlight}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 90,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+            }}
             pointerEvents="none"
           />
 
-          <View style={styles.handle} />
+          {/* Handle */}
+          <View
+            className="w-10 self-center mt-3 mb-2 rounded-[2px] bg-[rgba(255,255,255,0.25)]"
+            style={{ height: 4 }}
+          />
 
           {title && (
-            <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+            <View
+              className="flex-row items-center justify-between px-4 pb-3"
+              style={{ borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.08)' }}
+            >
+              <Text className="text-[17px] font-bold text-text-primary tracking-[-0.3px]">
+                {title}
+              </Text>
               <TouchableOpacity
                 onPress={onClose}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={styles.doneBtn}
+                className="px-2 bg-accent/18 rounded-lg"
+                style={{ paddingVertical: 4 }}
               >
-                <Text style={styles.doneBtnText}>Done</Text>
+                <Text className="text-[13px] text-accent-light font-bold">Done</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -122,7 +139,7 @@ export function BottomSheet({
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={{ padding: 16 }}
           >
             {children}
           </ScrollView>
@@ -131,69 +148,3 @@ export function BottomSheet({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  kavContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    pointerEvents: 'box-none',
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xxl,
-    borderTopRightRadius: Radius.xxl,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingBottom: 40,
-    overflow: 'hidden',
-  },
-  glassHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 90,
-    borderTopLeftRadius: Radius.xxl,
-    borderTopRightRadius: Radius.xxl,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignSelf: 'center',
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-  },
-  title: {
-    fontSize: Typography.sizes.md,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  doneBtn: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: Colors.accentMuted,
-    borderRadius: Radius.sm,
-  },
-  doneBtnText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.accentLight,
-    fontWeight: '700',
-  },
-  content: {
-    padding: Spacing.base,
-  },
-});

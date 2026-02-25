@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Platform,
 } from 'react-native';
@@ -14,7 +13,7 @@ import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { searchFood, scaleSearchResult, FoodSearchResult } from '../../src/utils/foodSearch';
 import { setPendingCaloriePrefill } from '../../src/utils/caloriePrefill';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 
 export default function FoodSearchScreen() {
   const { meal } = useLocalSearchParams<{ meal?: string }>();
@@ -26,7 +25,6 @@ export default function FoodSearchScreen() {
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    // Auto-focus the search input when screen mounts
     const t = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(t);
   }, []);
@@ -81,9 +79,12 @@ export default function FoodSearchScreen() {
           headerTintColor: Colors.textPrimary,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Search bar */}
-        <View style={styles.searchBar}>
+        <View
+          className="flex-row items-center gap-2 bg-surface-elevated rounded-2xl m-4 px-3 border border-border"
+          style={{ paddingVertical: Platform.OS === 'ios' ? 8 : 4 }}
+        >
           <Ionicons name="search-outline" size={18} color={Colors.textMuted} />
           <TextInput
             ref={inputRef}
@@ -91,7 +92,8 @@ export default function FoodSearchScreen() {
             onChangeText={handleSearch}
             placeholder="Search food (e.g. chicken breast, oats…)"
             placeholderTextColor={Colors.textMuted}
-            style={styles.searchInput}
+            className="flex-1 text-[15px] text-text-primary"
+            style={{ height: 36 }}
             keyboardAppearance="dark"
             clearButtonMode="while-editing"
             returnKeyType="search"
@@ -99,22 +101,24 @@ export default function FoodSearchScreen() {
           {loading && <ActivityIndicator size="small" color={Colors.accent} />}
         </View>
 
-        {/* Results */}
+        {/* Hint */}
         {!hasSearched && !query && (
-          <View style={styles.hintBox}>
+          <View className="flex-1 items-center justify-center p-6 gap-3">
             <Ionicons name="globe-outline" size={32} color={Colors.textMuted} />
-            <Text style={styles.hintTitle}>Global Food Database</Text>
-            <Text style={styles.hintSub}>
+            <Text className="text-[15px] font-bold text-text-secondary">Global Food Database</Text>
+            <Text className="text-[13px] text-text-muted text-center" style={{ lineHeight: 20 }}>
               Search over 3 million products from Australia, USA, and worldwide via Open Food Facts.
             </Text>
           </View>
         )}
 
         {hasSearched && !loading && results.length === 0 && (
-          <View style={styles.emptyBox}>
+          <View className="flex-1 items-center justify-center p-6 gap-3">
             <Ionicons name="search-outline" size={36} color={Colors.textMuted} />
-            <Text style={styles.emptyTitle}>No results for "{query}"</Text>
-            <Text style={styles.emptySub}>
+            <Text className="text-[15px] font-bold text-text-secondary">
+              No results for "{query}"
+            </Text>
+            <Text className="text-[13px] text-text-muted text-center" style={{ lineHeight: 20 }}>
               Try a different spelling, or add it manually using the form.
             </Text>
           </View>
@@ -123,30 +127,40 @@ export default function FoodSearchScreen() {
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 8 }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => {
             const serving = scaleSearchResult(item, item.servingSize);
             return (
               <TouchableOpacity
-                style={styles.resultCard}
+                className="flex-row items-center bg-surface rounded-2xl border border-border p-3 gap-3"
                 onPress={() => handleSelect(item)}
                 activeOpacity={0.8}
               >
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultName} numberOfLines={2}>{item.name}</Text>
+                <View className="flex-1 gap-0.5">
+                  <Text
+                    className="text-[13px] font-bold text-text-primary"
+                    style={{ lineHeight: 18 }}
+                    numberOfLines={2}
+                  >
+                    {item.name}
+                  </Text>
                   {item.brand ? (
-                    <Text style={styles.resultBrand} numberOfLines={1}>{item.brand}</Text>
+                    <Text className="text-[11px] text-text-muted" numberOfLines={1}>
+                      {item.brand}
+                    </Text>
                   ) : null}
-                  <Text style={styles.resultServing}>
+                  <Text className="text-[11px] text-text-secondary mt-0.5">
                     Per {item.servingSize}{item.servingUnit} serving
                   </Text>
                 </View>
 
-                <View style={styles.macroCol}>
-                  <Text style={styles.calValue}>{serving.calories}</Text>
-                  <Text style={styles.calUnit}>kcal</Text>
-                  <View style={styles.macroRow}>
+                <View className="items-center gap-1">
+                  <Text className="text-[20px] font-extrabold text-text-primary">
+                    {serving.calories}
+                  </Text>
+                  <Text className="text-[10px] text-text-muted -mt-1">kcal</Text>
+                  <View className="flex-row gap-1">
                     <MacroChip label="P" value={serving.protein} color={Colors.accent} />
                     <MacroChip label="C" value={serving.carbs} color={Colors.amber} />
                     <MacroChip label="F" value={serving.fat} color={Colors.pink} />
@@ -163,119 +177,9 @@ export default function FoodSearchScreen() {
 
 function MacroChip({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <View style={chipStyles.chip}>
-      <Text style={[chipStyles.label, { color }]}>{label}</Text>
-      <Text style={chipStyles.val}>{value}g</Text>
+    <View className="items-center" style={{ gap: 1 }}>
+      <Text className="text-[9px] font-bold uppercase" style={{ color }}>{label}</Text>
+      <Text className="text-[10px] text-text-secondary font-medium">{value}g</Text>
     </View>
   );
 }
-
-const chipStyles = StyleSheet.create({
-  chip: { alignItems: 'center', gap: 1 },
-  label: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-  val: { fontSize: 10, color: Colors.textSecondary, fontWeight: '500' },
-});
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    margin: Spacing.base,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? Spacing.sm : 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-    height: 36,
-  },
-  hintBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  hintTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  hintSub: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  emptyBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  emptyTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  emptySub: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  list: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: 48,
-    gap: Spacing.sm,
-  },
-  resultCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  resultInfo: { flex: 1, gap: 2 },
-  resultName: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    lineHeight: 18,
-  },
-  resultBrand: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  resultServing: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  macroCol: { alignItems: 'center', gap: 4 },
-  calValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-  },
-  calUnit: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginTop: -4,
-  },
-  macroRow: {
-    flexDirection: 'row',
-    gap: Spacing.xs,
-  },
-});

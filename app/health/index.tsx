@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   TextInput,
   Alert,
   Dimensions,
@@ -19,7 +18,7 @@ import { useSettingsStore } from '../../src/store/settingsStore';
 import { BodyWeightLog, SleepLog, ProgressPhoto } from '../../src/types';
 import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
-import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { Colors, Spacing, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { toDisplayWeightNumber } from '../../src/constants/units';
 import { formatDateISO } from '../../src/utils/date';
 import { format } from 'date-fns';
@@ -31,8 +30,8 @@ import * as ImagePicker from 'expo-image-picker';
 const SCREEN_W = Dimensions.get('window').width;
 const CHART_W = SCREEN_W - Spacing.base * 4;
 const CHART_H = 100;
+const PHOTO_SIZE = (SCREEN_W - Spacing.base * 2 - Spacing.sm * 2) / 3;
 
-// ─── Quality emoji map ────────────────────────────────────────────────────────
 const QUALITY_LABELS = ['', '😴', '😕', '😐', '😊', '😄'];
 
 export default function HealthScreen() {
@@ -45,11 +44,9 @@ export default function HealthScreen() {
   const [showWeightSheet, setShowWeightSheet] = useState(false);
   const [showSleepSheet, setShowSleepSheet] = useState(false);
 
-  // Weight form
   const [weightInput, setWeightInput] = useState('');
   const [bodyFatInput, setBodyFatInput] = useState('');
 
-  // Sleep form
   const [bedTime, setBedTime] = useState('22:30');
   const [wakeTime, setWakeTime] = useState('06:30');
   const [sleepQuality, setSleepQuality] = useState(3);
@@ -66,53 +63,49 @@ export default function HealthScreen() {
   }
 
   async function handleAddPhoto() {
-    Alert.alert(
-      'Add Progress Photo',
-      'Choose source:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Camera',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') return;
-            const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.8 });
-            if (!result.canceled && result.assets[0]) {
-              const db = await getDatabase();
-              await createProgressPhoto(db, {
-                id: generateId(),
-                date: formatDateISO(new Date()),
-                localUri: result.assets[0].uri,
-                workoutSessionId: null,
-                notes: '',
-                createdAt: new Date().toISOString(),
-              });
-              loadPhotos();
-            }
-          },
+    Alert.alert('Add Progress Photo', 'Choose source:', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Camera',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') return;
+          const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.8 });
+          if (!result.canceled && result.assets[0]) {
+            const db = await getDatabase();
+            await createProgressPhoto(db, {
+              id: generateId(),
+              date: formatDateISO(new Date()),
+              localUri: result.assets[0].uri,
+              workoutSessionId: null,
+              notes: '',
+              createdAt: new Date().toISOString(),
+            });
+            loadPhotos();
+          }
         },
-        {
-          text: 'Library',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') return;
-            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.8 });
-            if (!result.canceled && result.assets[0]) {
-              const db = await getDatabase();
-              await createProgressPhoto(db, {
-                id: generateId(),
-                date: formatDateISO(new Date()),
-                localUri: result.assets[0].uri,
-                workoutSessionId: null,
-                notes: '',
-                createdAt: new Date().toISOString(),
-              });
-              loadPhotos();
-            }
-          },
+      },
+      {
+        text: 'Library',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') return;
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.8 });
+          if (!result.canceled && result.assets[0]) {
+            const db = await getDatabase();
+            await createProgressPhoto(db, {
+              id: generateId(),
+              date: formatDateISO(new Date()),
+              localUri: result.assets[0].uri,
+              workoutSessionId: null,
+              notes: '',
+              createdAt: new Date().toISOString(),
+            });
+            loadPhotos();
+          }
         },
-      ],
-    );
+      },
+    ]);
   }
 
   async function handleDeletePhoto(photo: ProgressPhoto) {
@@ -135,15 +128,12 @@ export default function HealthScreen() {
     const [wh, wm] = wake.split(':').map(Number);
     let bedMinutes = bh * 60 + bm;
     let wakeMinutes = wh * 60 + wm;
-    if (wakeMinutes < bedMinutes) wakeMinutes += 24 * 60; // past midnight
+    if (wakeMinutes < bedMinutes) wakeMinutes += 24 * 60;
     return wakeMinutes - bedMinutes;
   }
 
   async function handleLogWeight() {
-    const kg =
-      unit === 'lbs'
-        ? parseFloat(weightInput) / 2.205
-        : parseFloat(weightInput);
+    const kg = unit === 'lbs' ? parseFloat(weightInput) / 2.205 : parseFloat(weightInput);
     if (isNaN(kg) || kg <= 0) {
       Alert.alert('Invalid', 'Please enter a valid weight.');
       return;
@@ -168,33 +158,34 @@ export default function HealthScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Health & Body' }} />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Segment control */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'weight' && styles.tabActive]}
-            onPress={() => setActiveTab('weight')}
-          >
-            <Ionicons name="scale-outline" size={16} color={activeTab === 'weight' ? Colors.textPrimary : Colors.textMuted} />
-            <Text style={[styles.tabText, activeTab === 'weight' && styles.tabTextActive]}>Weight</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'sleep' && styles.tabActive]}
-            onPress={() => setActiveTab('sleep')}
-          >
-            <Ionicons name="moon-outline" size={16} color={activeTab === 'sleep' ? Colors.textPrimary : Colors.textMuted} />
-            <Text style={[styles.tabText, activeTab === 'sleep' && styles.tabTextActive]}>Sleep</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'photos' && styles.tabActive]}
-            onPress={() => setActiveTab('photos')}
-          >
-            <Ionicons name="camera-outline" size={16} color={activeTab === 'photos' ? Colors.textPrimary : Colors.textMuted} />
-            <Text style={[styles.tabText, activeTab === 'photos' && styles.tabTextActive]}>Photos</Text>
-          </TouchableOpacity>
+        <View className="flex-row m-4 bg-surface-elevated rounded-xl p-0.5 border border-border">
+          {(['weight', 'sleep', 'photos'] as const).map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              className={`flex-1 flex-row items-center justify-center py-2 rounded-lg gap-1${
+                activeTab === tab ? ' bg-accent' : ''
+              }`}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Ionicons
+                name={tab === 'weight' ? 'scale-outline' : tab === 'sleep' ? 'moon-outline' : 'camera-outline'}
+                size={16}
+                color={activeTab === tab ? Colors.textPrimary : Colors.textMuted}
+              />
+              <Text
+                className={`text-[13px] font-semibold${
+                  activeTab === tab ? ' text-text-primary' : ' text-text-muted'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 0, gap: 12, paddingBottom: SCROLL_BOTTOM_PADDING }}>
           {activeTab === 'weight' && (
             <WeightTab
               logs={weightLogs}
@@ -221,11 +212,7 @@ export default function HealthScreen() {
             />
           )}
           {activeTab === 'photos' && (
-            <PhotosTab
-              photos={photos}
-              onAdd={handleAddPhoto}
-              onDelete={handleDeletePhoto}
-            />
+            <PhotosTab photos={photos} onAdd={handleAddPhoto} onDelete={handleDeletePhoto} />
           )}
         </ScrollView>
 
@@ -236,10 +223,12 @@ export default function HealthScreen() {
           title={`Log Today's Weight`}
           snapHeight={320}
         >
-          <View style={styles.form}>
-            <View style={styles.formRow}>
+          <View className="gap-3">
+            <View className="flex-row gap-2">
               <View style={{ flex: 2, gap: 4 }}>
-                <Text style={styles.formLabel}>Weight ({unit})</Text>
+                <Text className="text-[11px] text-text-muted font-semibold uppercase tracking-[0.5px]">
+                  Weight ({unit})
+                </Text>
                 <TextInput
                   value={weightInput}
                   onChangeText={setWeightInput}
@@ -247,12 +236,15 @@ export default function HealthScreen() {
                   placeholderTextColor={Colors.textMuted}
                   keyboardType="decimal-pad"
                   keyboardAppearance="dark"
-                  style={styles.formInput}
+                  className="bg-surface-elevated rounded-xl border border-border px-3 text-[20px] font-semibold text-text-primary"
+                  style={{ paddingVertical: 8, minHeight: 48 }}
                   autoFocus
                 />
               </View>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.formLabel}>Body Fat %</Text>
+                <Text className="text-[11px] text-text-muted font-semibold uppercase tracking-[0.5px]">
+                  Body Fat %
+                </Text>
                 <TextInput
                   value={bodyFatInput}
                   onChangeText={setBodyFatInput}
@@ -260,12 +252,13 @@ export default function HealthScreen() {
                   placeholderTextColor={Colors.textMuted}
                   keyboardType="decimal-pad"
                   keyboardAppearance="dark"
-                  style={styles.formInput}
+                  className="bg-surface-elevated rounded-xl border border-border px-3 text-[20px] font-semibold text-text-primary"
+                  style={{ paddingVertical: 8, minHeight: 48 }}
                 />
               </View>
             </View>
-            <TouchableOpacity style={styles.logBtn} onPress={handleLogWeight}>
-              <Text style={styles.logBtnText}>Save</Text>
+            <TouchableOpacity className="bg-accent rounded-xl py-3 items-center" onPress={handleLogWeight}>
+              <Text className="text-white font-bold text-[15px]">Save</Text>
             </TouchableOpacity>
           </View>
         </BottomSheet>
@@ -277,10 +270,12 @@ export default function HealthScreen() {
           title="Log Last Night's Sleep"
           snapHeight={400}
         >
-          <View style={styles.form}>
-            <View style={styles.formRow}>
+          <View className="gap-3">
+            <View className="flex-row gap-2">
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.formLabel}>Bed Time (HH:MM)</Text>
+                <Text className="text-[11px] text-text-muted font-semibold uppercase tracking-[0.5px]">
+                  Bed Time (HH:MM)
+                </Text>
                 <TextInput
                   value={bedTime}
                   onChangeText={setBedTime}
@@ -288,12 +283,14 @@ export default function HealthScreen() {
                   placeholderTextColor={Colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   keyboardAppearance="dark"
-                  style={styles.formInput}
-                  textAlign="center"
+                  className="bg-surface-elevated rounded-xl border border-border px-3 text-[20px] font-semibold text-text-primary text-center"
+                  style={{ paddingVertical: 8, minHeight: 48 }}
                 />
               </View>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.formLabel}>Wake Time (HH:MM)</Text>
+                <Text className="text-[11px] text-text-muted font-semibold uppercase tracking-[0.5px]">
+                  Wake Time (HH:MM)
+                </Text>
                 <TextInput
                   value={wakeTime}
                   onChangeText={setWakeTime}
@@ -301,30 +298,38 @@ export default function HealthScreen() {
                   placeholderTextColor={Colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   keyboardAppearance="dark"
-                  style={styles.formInput}
-                  textAlign="center"
+                  className="bg-surface-elevated rounded-xl border border-border px-3 text-[20px] font-semibold text-text-primary text-center"
+                  style={{ paddingVertical: 8, minHeight: 48 }}
                 />
               </View>
             </View>
 
-            <View style={{ gap: 4 }}>
-              <Text style={styles.formLabel}>Sleep Quality</Text>
-              <View style={styles.qualityRow}>
+            <View className="gap-1">
+              <Text className="text-[11px] text-text-muted font-semibold uppercase tracking-[0.5px]">
+                Sleep Quality
+              </Text>
+              <View className="flex-row gap-2">
                 {[1, 2, 3, 4, 5].map((q) => (
                   <TouchableOpacity
                     key={q}
-                    style={[styles.qualityBtn, sleepQuality === q && styles.qualityBtnActive]}
+                    className={`flex-1 items-center py-2 rounded-lg border gap-0.5${
+                      sleepQuality === q
+                        ? ' border-accent bg-accent/[0.18]'
+                        : ' border-border bg-surface-elevated'
+                    }`}
                     onPress={() => setSleepQuality(q)}
                   >
-                    <Text style={styles.qualityEmoji}>{QUALITY_LABELS[q]}</Text>
-                    <Text style={[styles.qualityNum, sleepQuality === q && { color: Colors.accent }]}>{q}</Text>
+                    <Text className="text-[20px]">{QUALITY_LABELS[q]}</Text>
+                    <Text className={`text-[11px]${sleepQuality === q ? ' text-accent' : ' text-text-muted'}`}>
+                      {q}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
-            <TouchableOpacity style={styles.logBtn} onPress={handleLogSleep}>
-              <Text style={styles.logBtnText}>Save</Text>
+            <TouchableOpacity className="bg-accent rounded-xl py-3 items-center" onPress={handleLogSleep}>
+              <Text className="text-white font-bold text-[15px]">Save</Text>
             </TouchableOpacity>
           </View>
         </BottomSheet>
@@ -350,25 +355,26 @@ function WeightTab({
 
   return (
     <>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Body Weight</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[24px] font-bold text-text-primary">Body Weight</Text>
+        <TouchableOpacity
+          className="flex-row items-center gap-1 px-3 py-1 rounded-lg"
+          style={{ backgroundColor: Colors.accentMuted }}
+          onPress={onAdd}
+        >
           <Ionicons name="add" size={16} color={Colors.accent} />
-          <Text style={styles.addBtnText}>Log Today</Text>
+          <Text className="text-[13px] font-semibold text-accent">Log Today</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Latest stats */}
       {logs.length > 0 && (
-        <Card style={styles.statsCard}>
-          <View style={styles.statsRow}>
+        <Card>
+          <View className="flex-row gap-3">
             <StatBox
               label="Latest"
               value={`${(toDisplayWeightNumber(logs[0].weightKg, unit) ?? 0).toFixed(1)} ${unit}`}
             />
-            {logs[0].bodyFatPct && (
-              <StatBox label="Body Fat" value={`${logs[0].bodyFatPct}%`} />
-            )}
+            {logs[0].bodyFatPct && <StatBox label="Body Fat" value={`${logs[0].bodyFatPct}%`} />}
             {logs.length >= 2 && (() => {
               const curr = toDisplayWeightNumber(logs[0].weightKg, unit) ?? 0;
               const prev = toDisplayWeightNumber(logs[1].weightKg, unit) ?? 0;
@@ -385,34 +391,37 @@ function WeightTab({
         </Card>
       )}
 
-      {/* Weight chart */}
       {chartData.length >= 2 && (
-        <Card style={styles.chartCard}>
-          <Text style={styles.chartTitle}>30-Day Trend</Text>
+        <Card style={{ gap: 8 }}>
+          <Text className="text-[13px] font-bold text-text-muted uppercase tracking-[0.6px]">30-Day Trend</Text>
           <WeightChart data={chartData} unit={unit} />
         </Card>
       )}
 
-      {/* Log list */}
       {logs.length === 0 ? (
-        <Text style={styles.emptyText}>No weight logs yet. Tap "Log Today" to start!</Text>
+        <Text className="text-[15px] text-text-muted text-center py-6">
+          No weight logs yet. Tap "Log Today" to start!
+        </Text>
       ) : (
         logs.map((log) => (
           <TouchableOpacity
             key={log.id}
-            style={styles.logRow}
+            className="flex-row justify-between items-center py-3"
+            style={{ borderTopWidth: 0.5, borderTopColor: Colors.border }}
             onLongPress={() => onDelete(log.id)}
           >
             <View>
-              <Text style={styles.logDate}>{format(new Date(log.date), 'EEE, MMM d')}</Text>
-              {log.notes ? <Text style={styles.logNotes}>{log.notes}</Text> : null}
+              <Text className="text-[15px] font-semibold text-text-primary">
+                {format(new Date(log.date), 'EEE, MMM d')}
+              </Text>
+              {log.notes ? <Text className="text-[13px] text-text-muted">{log.notes}</Text> : null}
             </View>
-            <View style={{ alignItems: 'flex-end', gap: 2 }}>
-              <Text style={styles.logWeight}>
+            <View className="items-end gap-0.5">
+              <Text className="text-[20px] font-bold text-text-primary">
                 {(toDisplayWeightNumber(log.weightKg, unit) ?? 0).toFixed(1)} {unit}
               </Text>
               {log.bodyFatPct ? (
-                <Text style={styles.logBf}>{log.bodyFatPct}% BF</Text>
+                <Text className="text-[13px] text-text-secondary">{log.bodyFatPct}% BF</Text>
               ) : null}
             </View>
           </TouchableOpacity>
@@ -422,13 +431,7 @@ function WeightTab({
   );
 }
 
-function WeightChart({
-  data,
-  unit,
-}: {
-  data: { date: string; weightKg: number }[];
-  unit: 'kg' | 'lbs';
-}) {
+function WeightChart({ data, unit }: { data: { date: string; weightKg: number }[]; unit: 'kg' | 'lbs' }) {
   const weights = data.map((d) => toDisplayWeightNumber(d.weightKg, unit) ?? 0);
   const min = Math.min(...weights);
   const max = Math.max(...weights);
@@ -457,9 +460,9 @@ function WeightChart({
           <Circle key={i} cx={p.x} cy={p.y} r={3} fill={Colors.accent} />
         ))}
       </Svg>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={styles.axisLabel}>{format(new Date(data[0].date), 'MMM d')}</Text>
-        <Text style={styles.axisLabel}>{format(new Date(data[data.length - 1].date), 'MMM d')}</Text>
+      <View className="flex-row justify-between">
+        <Text className="text-[11px] text-text-muted">{format(new Date(data[0].date), 'MMM d')}</Text>
+        <Text className="text-[11px] text-text-muted">{format(new Date(data[data.length - 1].date), 'MMM d')}</Text>
       </View>
     </View>
   );
@@ -476,24 +479,26 @@ function SleepTab({
   onAdd: () => void;
   onDelete: (id: string) => void;
 }) {
-  const avgDuration =
-    logs.length > 0 ? logs.reduce((s, l) => s + l.durationMinutes, 0) / logs.length : 0;
-  const avgQuality =
-    logs.length > 0 ? logs.reduce((s, l) => s + l.quality, 0) / logs.length : 0;
+  const avgDuration = logs.length > 0 ? logs.reduce((s, l) => s + l.durationMinutes, 0) / logs.length : 0;
+  const avgQuality = logs.length > 0 ? logs.reduce((s, l) => s + l.quality, 0) / logs.length : 0;
 
   return (
     <>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Sleep</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[24px] font-bold text-text-primary">Sleep</Text>
+        <TouchableOpacity
+          className="flex-row items-center gap-1 px-3 py-1 rounded-lg"
+          style={{ backgroundColor: Colors.accentMuted }}
+          onPress={onAdd}
+        >
           <Ionicons name="add" size={16} color={Colors.accent} />
-          <Text style={styles.addBtnText}>Log Sleep</Text>
+          <Text className="text-[13px] font-semibold text-accent">Log Sleep</Text>
         </TouchableOpacity>
       </View>
 
       {logs.length >= 3 && (
-        <Card style={styles.statsCard}>
-          <View style={styles.statsRow}>
+        <Card>
+          <View className="flex-row gap-3">
             <StatBox
               label="Avg Duration"
               value={`${Math.floor(avgDuration / 60)}h ${Math.round(avgDuration % 60)}m`}
@@ -507,7 +512,9 @@ function SleepTab({
       )}
 
       {logs.length === 0 ? (
-        <Text style={styles.emptyText}>No sleep logs yet. Tap "Log Sleep" to start!</Text>
+        <Text className="text-[15px] text-text-muted text-center py-6">
+          No sleep logs yet. Tap "Log Sleep" to start!
+        </Text>
       ) : (
         logs.map((log) => {
           const h = Math.floor(log.durationMinutes / 60);
@@ -515,18 +522,21 @@ function SleepTab({
           return (
             <TouchableOpacity
               key={log.id}
-              style={styles.logRow}
+              className="flex-row justify-between items-center py-3"
+              style={{ borderTopWidth: 0.5, borderTopColor: Colors.border }}
               onLongPress={() => onDelete(log.id)}
             >
               <View>
-                <Text style={styles.logDate}>{format(new Date(log.date), 'EEE, MMM d')}</Text>
-                <Text style={styles.logSleepTime}>
+                <Text className="text-[15px] font-semibold text-text-primary">
+                  {format(new Date(log.date), 'EEE, MMM d')}
+                </Text>
+                <Text className="text-[13px] text-text-secondary">
                   {log.bedTime} → {log.wakeTime}
                 </Text>
               </View>
-              <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                <Text style={styles.logWeight}>{h}h {m}m</Text>
-                <Text style={styles.logBf}>{QUALITY_LABELS[log.quality]} {log.quality}/5</Text>
+              <View className="items-end gap-0.5">
+                <Text className="text-[20px] font-bold text-text-primary">{h}h {m}m</Text>
+                <Text className="text-[13px] text-text-secondary">{QUALITY_LABELS[log.quality]} {log.quality}/5</Text>
               </View>
             </TouchableOpacity>
           );
@@ -537,8 +547,6 @@ function SleepTab({
 }
 
 // ─── Photos Tab ───────────────────────────────────────────────────────────────
-
-const PHOTO_SIZE = (Dimensions.get('window').width - Spacing.base * 2 - Spacing.sm * 2) / 3;
 
 function PhotosTab({
   photos,
@@ -553,37 +561,52 @@ function PhotosTab({
 
   return (
     <>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Progress Photos</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={onAdd}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[24px] font-bold text-text-primary">Progress Photos</Text>
+        <TouchableOpacity
+          className="flex-row items-center gap-1 px-3 py-1 rounded-lg"
+          style={{ backgroundColor: Colors.accentMuted }}
+          onPress={onAdd}
+        >
           <Ionicons name="camera" size={16} color={Colors.accent} />
-          <Text style={styles.addBtnText}>Add Photo</Text>
+          <Text className="text-[13px] font-semibold text-accent">Add Photo</Text>
         </TouchableOpacity>
       </View>
 
       {photos.length === 0 ? (
-        <View style={styles.emptyPhotos}>
+        <View className="items-center py-12 gap-3">
           <Ionicons name="images-outline" size={48} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No progress photos yet.</Text>
-          <Text style={styles.emptySubText}>Take photos after workouts to track your physique over time.</Text>
+          <Text className="text-[15px] text-text-muted text-center">No progress photos yet.</Text>
+          <Text className="text-[13px] text-text-muted text-center px-6">
+            Take photos after workouts to track your physique over time.
+          </Text>
         </View>
       ) : (
-        <View style={styles.photoGrid}>
+        <View className="flex-row flex-wrap gap-2 pb-6">
           {photos.map((photo) => (
             <TouchableOpacity
               key={photo.id}
-              style={styles.photoItem}
+              style={{ width: PHOTO_SIZE, gap: 4, alignItems: 'center' }}
               onPress={() => setSelectedPhoto(photo)}
               onLongPress={() => onDelete(photo)}
             >
-              <Image source={{ uri: photo.localUri }} style={styles.photoThumb} />
-              <Text style={styles.photoDate}>{format(new Date(photo.date), 'MMM d')}</Text>
+              <Image
+                source={{ uri: photo.localUri }}
+                style={{
+                  width: PHOTO_SIZE,
+                  height: PHOTO_SIZE,
+                  borderRadius: 12,
+                  backgroundColor: Colors.surfaceElevated,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              />
+              <Text className="text-[11px] text-text-muted">{format(new Date(photo.date), 'MMM d')}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      {/* Full-screen photo viewer */}
       {selectedPhoto && (
         <PhotoViewer photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
       )}
@@ -595,11 +618,16 @@ function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => 
   const W = Dimensions.get('window').width;
   const H = Dimensions.get('window').height;
   return (
-    <View style={[StyleSheet.absoluteFill, styles.photoOverlay]}>
-      <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+    <View
+      className="absolute inset-0 items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.95)', zIndex: 100 }}
+    >
+      <TouchableOpacity className="absolute inset-0" onPress={onClose} activeOpacity={1} />
       <Image source={{ uri: photo.localUri }} style={{ width: W, height: H * 0.8 }} resizeMode="contain" />
-      <Text style={styles.photoViewerDate}>{format(new Date(photo.date), 'EEEE, MMMM d yyyy')}</Text>
-      <TouchableOpacity style={styles.photoCloseBtn} onPress={onClose}>
+      <Text className="text-[13px] mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        {format(new Date(photo.date), 'EEEE, MMMM d yyyy')}
+      </Text>
+      <TouchableOpacity className="absolute right-4" style={{ top: 60 }} onPress={onClose}>
         <Ionicons name="close-circle" size={36} color="white" />
       </TouchableOpacity>
     </View>
@@ -608,190 +636,21 @@ function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => 
 
 function StatBox({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
   return (
-    <View style={styles.statBox}>
-      <Text style={[styles.statValue, positive !== undefined && { color: positive ? Colors.success : Colors.danger }]}>
+    <View className="flex-1 items-center bg-surface-elevated rounded-xl p-3 gap-0.5">
+      <Text
+        className="text-[20px] font-bold"
+        style={{
+          color:
+            positive !== undefined
+              ? positive
+                ? Colors.success
+                : Colors.danger
+              : Colors.textPrimary,
+        }}
+      >
         {value}
       </Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text className="text-[11px] text-text-muted">{label}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  tabs: {
-    flexDirection: 'row',
-    margin: Spacing.base,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.sm,
-    gap: Spacing.xs,
-  },
-  tabActive: { backgroundColor: Colors.accent },
-  tabText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textMuted },
-  tabTextActive: { color: Colors.textPrimary },
-  content: { padding: Spacing.base, paddingTop: 0, gap: Spacing.md, paddingBottom: SCROLL_BOTTOM_PADDING },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.accentMuted,
-  },
-  addBtnText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.accent },
-  statsCard: {},
-  statsRow: { flexDirection: 'row', gap: Spacing.md },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    gap: 2,
-  },
-  statValue: { fontSize: Typography.sizes.lg, fontWeight: '700', color: Colors.textPrimary },
-  statLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  chartCard: { gap: Spacing.sm },
-  chartTitle: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  axisLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  emptyText: {
-    fontSize: Typography.sizes.base,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing.xl,
-  },
-  logRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-  },
-  logDate: { fontSize: Typography.sizes.base, fontWeight: '600', color: Colors.textPrimary },
-  logNotes: { fontSize: Typography.sizes.sm, color: Colors.textMuted },
-  logSleepTime: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
-  logWeight: { fontSize: Typography.sizes.lg, fontWeight: '700', color: Colors.textPrimary },
-  logBf: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
-  form: { gap: Spacing.md },
-  formRow: { flexDirection: 'row', gap: Spacing.sm },
-  formLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  formInput: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.sizes.lg,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    minHeight: 48,
-  },
-  qualityRow: { flexDirection: 'row', gap: Spacing.sm },
-  qualityBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 2,
-  },
-  qualityBtnActive: { borderColor: Colors.accent, backgroundColor: Colors.accentMuted },
-  qualityEmoji: { fontSize: 20 },
-  qualityNum: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  logBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  logBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.base },
-  // Photos tab
-  emptyPhotos: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxxl,
-    gap: Spacing.md,
-  },
-  emptySubText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    paddingBottom: Spacing.xl,
-  },
-  photoItem: {
-    width: PHOTO_SIZE,
-    gap: 4,
-    alignItems: 'center',
-  },
-  photoThumb: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  photoDate: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  photoOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  photoViewerDate: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: Typography.sizes.sm,
-    marginTop: Spacing.md,
-  },
-  photoCloseBtn: {
-    position: 'absolute',
-    top: 60,
-    right: Spacing.base,
-  },
-});

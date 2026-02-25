@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Alert,
@@ -20,7 +19,7 @@ import { getVideosForExerciseTemplate, deleteExerciseVideo } from '../../src/db/
 import { ExerciseTemplate, ExerciseVideo } from '../../src/types';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors, Spacing } from '../../src/constants/theme';
 import { MUSCLE_GROUP_LABELS } from '../../src/constants/exercises';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { toDisplayWeightNumber } from '../../src/constants/units';
@@ -71,7 +70,6 @@ export default function ExerciseDetailScreen() {
     setSessHistory(sessHist);
     setVideos(vids);
 
-    // Merge best1RM from set history back into history entries
     const histWithRM = hist.map((h) => {
       const matching = sessHist.find((s) => s.sessionDate.startsWith(h.sessionDate.slice(0, 10)));
       return { ...h, best1RMEstimate: matching?.best1RM ?? null };
@@ -129,48 +127,59 @@ export default function ExerciseDetailScreen() {
     trend === 'stalling' ? Colors.amber : Colors.textSecondary;
 
   if (!template) {
-    return <View style={styles.container}><Text style={styles.loading}>Loading...</Text></View>;
+    return (
+      <View className="flex-1 bg-background">
+        <Text className="text-text-secondary text-center mt-10">Loading...</Text>
+      </View>
+    );
   }
 
   return (
     <>
       <Stack.Screen options={{ title: template.name }} />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Info card */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.exerciseName} numberOfLines={2}>{template.name}</Text>
+        <View
+          className="bg-surface px-4 py-4 gap-1"
+          style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
+        >
+          <View className="flex-row items-start justify-between gap-2">
+            <Text className="flex-1 text-[24px] font-bold text-text-primary" numberOfLines={2}>
+              {template.name}
+            </Text>
             <Badge label={MUSCLE_GROUP_LABELS[template.muscleGroup]} variant="accent" />
           </View>
-          <Text style={styles.equipment}>{template.equipment}</Text>
+          <Text className="text-[13px] text-text-secondary">{template.equipment}</Text>
         </View>
 
         {/* Tab bar */}
-        <View style={styles.tabBar}>
+        <View
+          className="flex-row bg-surface px-4 gap-4"
+          style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
+        >
           {(['overview', 'history', 'insights'] as Tab[]).map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              className={`py-3 px-2 border-b-2${activeTab === tab ? ' border-accent' : ' border-transparent'}`}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              <Text className={`text-[13px] font-semibold${activeTab === tab ? ' text-accent' : ' text-text-muted'}`}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
 
           {/* ── OVERVIEW TAB ── */}
           {activeTab === 'overview' && (
             <>
-              {/* PR cards */}
               {history.length > 0 && (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.prScroll}
+                  contentContainerStyle={{ gap: 8, paddingRight: 8 }}
                 >
                   <PRCard label="Max Weight" value={`${toDisplayWeightNumber(maxWeight, unit) ?? 0}`} unit={unit} color={Colors.accent} icon="barbell" />
                   {best1RM > 0 && <PRCard label="Best 1RM Est." value={`${toDisplayWeightNumber(best1RM, unit) ?? 0}`} unit={unit} color={Colors.teal} icon="trophy" />}
@@ -179,25 +188,32 @@ export default function ExerciseDetailScreen() {
                 </ScrollView>
               )}
 
-              {/* Chart metric selector */}
               {chartData.length >= 2 && (
                 <>
-                  <View style={styles.metricRow}>
+                  <View className="flex-row gap-2">
                     {(['weight', 'volume', '1rm'] as ChartMetric[]).map((m) => (
                       <TouchableOpacity
                         key={m}
-                        style={[styles.metricChip, chartMetric === m && styles.metricChipActive]}
+                        className={`flex-1 py-2 rounded-xl items-center border${
+                          chartMetric === m
+                            ? ' bg-accent/[0.18] border-accent'
+                            : ' bg-surface-elevated border-border'
+                        }`}
                         onPress={() => setChartMetric(m)}
                       >
-                        <Text style={[styles.metricChipText, chartMetric === m && styles.metricChipTextActive]}>
+                        <Text
+                          className={`text-[11px] font-semibold${
+                            chartMetric === m ? ' text-accent' : ' text-text-secondary'
+                          }`}
+                        >
                           {m === '1rm' ? '1RM Est.' : m.charAt(0).toUpperCase() + m.slice(1)}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Card style={styles.chartCard}>
-                    <Text style={styles.cardTitle}>
+                  <Card style={{ gap: 8 }}>
+                    <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
                       {chartMetric === 'weight' ? `Max Weight (${unit})` :
                        chartMetric === 'volume' ? `Volume (${unit})` : `Estimated 1RM (${unit})`}
                     </Text>
@@ -207,32 +223,43 @@ export default function ExerciseDetailScreen() {
               )}
 
               {history.length === 0 && (
-                <Card style={styles.emptyCard}>
+                <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
                   <Ionicons name="barbell-outline" size={40} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No history yet</Text>
-                  <Text style={styles.emptySub}>Complete a workout with this exercise to see progress charts.</Text>
+                  <Text className="text-[15px] font-bold text-text-secondary">No history yet</Text>
+                  <Text className="text-[13px] text-text-muted text-center leading-5">
+                    Complete a workout with this exercise to see progress charts.
+                  </Text>
                 </Card>
               )}
 
-              {/* Videos */}
               {videos.length > 0 && (
-                <Card style={styles.videosCard}>
-                  <Text style={styles.cardTitle}>Videos ({videos.length})</Text>
-                  <View style={styles.videoGrid}>
+                <Card style={{ gap: 12 }}>
+                  <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
+                    Videos ({videos.length})
+                  </Text>
+                  <View className="flex-row flex-wrap gap-2">
                     {videos.map((v) => (
                       <TouchableOpacity
                         key={v.id}
-                        style={styles.videoCell}
+                        style={{ width: '48%', gap: 4 }}
                         onLongPress={() => handleDeleteVideo(v)}
                       >
                         {v.thumbnailUri ? (
-                          <Image source={{ uri: v.thumbnailUri }} style={styles.videoThumb} />
+                          <Image
+                            source={{ uri: v.thumbnailUri }}
+                            style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8, backgroundColor: Colors.surfaceElevated }}
+                          />
                         ) : (
-                          <View style={[styles.videoThumb, styles.videoPlaceholder]}>
+                          <View
+                            className="items-center justify-center bg-surface-elevated rounded-lg"
+                            style={{ width: '100%', aspectRatio: 16 / 9 }}
+                          >
                             <Ionicons name="videocam" size={24} color={Colors.accent} />
                           </View>
                         )}
-                        <Text style={styles.videoDate}>{format(new Date(v.recordedAt), 'MMM d')}</Text>
+                        <Text className="text-[11px] text-text-muted">
+                          {format(new Date(v.recordedAt), 'MMM d')}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -245,27 +272,33 @@ export default function ExerciseDetailScreen() {
           {activeTab === 'history' && (
             <>
               {sessHistory.length === 0 ? (
-                <Card style={styles.emptyCard}>
+                <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
                   <Ionicons name="time-outline" size={40} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>No sessions yet</Text>
-                  <Text style={styles.emptySub}>Your last 5 sessions will appear here once you've logged this exercise.</Text>
+                  <Text className="text-[15px] font-bold text-text-secondary">No sessions yet</Text>
+                  <Text className="text-[13px] text-text-muted text-center leading-5">
+                    Your last 5 sessions will appear here once you've logged this exercise.
+                  </Text>
                 </Card>
               ) : (
                 sessHistory.map((sess) => {
                   const isExpanded = expandedSession === sess.sessionId;
                   return (
-                    <Card key={sess.sessionId} style={styles.sessionCard}>
+                    <Card key={sess.sessionId} style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
                       <TouchableOpacity
-                        style={styles.sessionHeader}
+                        className="flex-row items-center p-3 gap-2"
                         onPress={() => setExpandedSession(isExpanded ? null : sess.sessionId)}
                         activeOpacity={0.7}
                       >
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.sessionDate}>{format(new Date(sess.sessionDate), 'EEE, MMM d yyyy')}</Text>
-                          <Text style={styles.sessionName} numberOfLines={1}>{sess.sessionName}</Text>
+                        <View className="flex-1">
+                          <Text className="text-[11px] text-text-muted">
+                            {format(new Date(sess.sessionDate), 'EEE, MMM d yyyy')}
+                          </Text>
+                          <Text className="text-[15px] font-semibold text-text-primary" numberOfLines={1}>
+                            {sess.sessionName}
+                          </Text>
                         </View>
-                        <View style={styles.sessionMeta}>
-                          <Text style={styles.sessionVolume}>
+                        <View className="flex-row items-center gap-2">
+                          <Text className="text-[13px] font-semibold text-accent-light">
                             {unit === 'lbs' ? Math.round(sess.totalVolumeKg * 2.20462) : Math.round(sess.totalVolumeKg)} {unit}
                           </Text>
                           <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
@@ -273,24 +306,30 @@ export default function ExerciseDetailScreen() {
                       </TouchableOpacity>
 
                       {isExpanded && (
-                        <View style={styles.setList}>
+                        <View
+                          className="px-3 pb-3 pt-2 gap-1.5"
+                          style={{ borderTopWidth: 0.5, borderTopColor: Colors.border }}
+                        >
                           {sess.sets.map((s) => (
-                            <View key={s.setId} style={styles.setRow}>
-                              <Text style={styles.setNum}>
+                            <View key={s.setId} className="flex-row items-center gap-2">
+                              <Text className="text-[11px] font-bold text-text-muted w-5">
                                 {s.isWarmup ? 'W' : `S${s.setNumber}`}
                               </Text>
-                              <Text style={styles.setWeight}>
+                              <Text className="text-[13px] font-semibold text-text-primary">
                                 {toDisplayWeightNumber(s.weightKg, unit) ?? 0} {unit}
                               </Text>
-                              <Text style={styles.setReps}>× {s.reps}</Text>
+                              <Text className="text-[13px] text-text-secondary">× {s.reps}</Text>
                               {s.estimated1RM !== null && !s.isWarmup && (
-                                <Text style={styles.set1RM}>
+                                <Text className="text-[11px] text-teal ml-auto">
                                   ~{toDisplayWeightNumber(s.estimated1RM, unit) ?? 0} 1RM
                                 </Text>
                               )}
                               {s.rpe !== null && (
-                                <View style={styles.rpeChip}>
-                                  <Text style={styles.rpeText}>RPE {s.rpe}</Text>
+                                <View
+                                  className="rounded px-1 py-0.5"
+                                  style={{ backgroundColor: Colors.amberMuted }}
+                                >
+                                  <Text className="text-[10px] font-semibold text-amber">RPE {s.rpe}</Text>
                                 </View>
                               )}
                             </View>
@@ -307,87 +346,102 @@ export default function ExerciseDetailScreen() {
           {/* ── INSIGHTS TAB ── */}
           {activeTab === 'insights' && (
             <>
-              {/* Trend card */}
-              <Card style={styles.trendCard}>
-                <View style={styles.trendHeader}>
-                  <View style={[styles.trendIconBg, { backgroundColor: trendColor + '22' }]}>
+              <Card style={{ gap: 12 }}>
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="w-10 h-10 rounded-xl items-center justify-center"
+                    style={{ backgroundColor: trendColor + '22' }}
+                  >
                     <Ionicons name={trendIcon} size={20} color={trendColor} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>Trend Analysis</Text>
-                    <Text style={[styles.trendLabel, { color: trendColor }]}>
+                  <View className="flex-1">
+                    <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
+                      Trend Analysis
+                    </Text>
+                    <Text className="text-[15px] font-bold" style={{ color: trendColor }}>
                       {trend === 'progressing' ? 'Progressing' :
                        trend === 'declining' ? 'Declining' :
                        trend === 'stalling' ? 'Plateau' : 'More data needed'}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.adviceText}>{advice}</Text>
+                <Text className="text-[13px] text-text-secondary leading-5">{advice}</Text>
               </Card>
 
-              {/* Rep records */}
-              <Card style={styles.recordsCard}>
-                <Text style={styles.cardTitle}>Personal Records</Text>
+              <Card style={{ gap: 8 }}>
+                <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
+                  Personal Records
+                </Text>
                 {repRecords.map((rec) => (
-                  <View key={rec.repTarget} style={styles.recordRow}>
-                    <Text style={styles.recordLabel}>{rec.label}</Text>
-                    <View style={{ flex: 1 }} />
+                  <View
+                    key={rec.repTarget}
+                    className="flex-row items-center py-1"
+                    style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
+                  >
+                    <Text className="text-[13px] font-semibold text-text-primary w-20">{rec.label}</Text>
+                    <View className="flex-1" />
                     {rec.value !== null ? (
                       <>
-                        <Text style={styles.recordValue}>
+                        <Text className="text-[15px] font-bold text-accent">
                           {toDisplayWeightNumber(rec.value, unit) ?? 0} {unit}
                         </Text>
                         {rec.sessionDate && (
-                          <Text style={styles.recordDate}>
+                          <Text className="text-[11px] text-text-muted ml-2">
                             {format(new Date(rec.sessionDate), 'MMM d')}
                           </Text>
                         )}
                       </>
                     ) : (
-                      <Text style={styles.recordEmpty}>—</Text>
+                      <Text className="text-[15px] text-text-muted">—</Text>
                     )}
                   </View>
                 ))}
               </Card>
 
-              {/* Next session target */}
               {trend === 'progressing' && maxWeight > 0 && (
-                <Card style={styles.nextCard}>
-                  <View style={styles.nextHeader}>
+                <Card style={{ gap: 8 }}>
+                  <View className="flex-row items-center gap-2">
                     <Ionicons name="flag" size={16} color={Colors.accent} />
-                    <Text style={styles.cardTitle}>Next Session Target</Text>
+                    <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
+                      Next Session Target
+                    </Text>
                   </View>
-                  <Text style={styles.nextValue}>
+                  <Text className="text-[28px] font-extrabold text-text-primary">
                     {toDisplayWeightNumber(maxWeight + (unit === 'lbs' ? 5 : 2.5), unit)} {unit}
                   </Text>
-                  <Text style={styles.nextSub}>Add 2.5kg/5lbs when all reps are completed with clean form</Text>
+                  <Text className="text-[13px] text-text-muted">
+                    Add 2.5kg/5lbs when all reps are completed with clean form
+                  </Text>
                 </Card>
               )}
 
-              {/* Coaching tips */}
               {coachingTips.length > 0 && (
-                <Card style={styles.coachCard}>
-                  <Text style={styles.cardTitle}>Coaching Tips · {MUSCLE_GROUP_LABELS[template.muscleGroup]}</Text>
+                <Card style={{ gap: 12 }}>
+                  <Text className="text-[11px] font-bold text-text-secondary uppercase tracking-[0.8px]">
+                    Coaching Tips · {MUSCLE_GROUP_LABELS[template.muscleGroup]}
+                  </Text>
                   {coachingTips.map((tip, i) => (
-                    <View key={i} style={styles.tipRow}>
-                      <View style={styles.tipDot} />
-                      <Text style={styles.tipText}>{tip}</Text>
+                    <View key={i} className="flex-row gap-2 items-start">
+                      <View className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" style={{ marginTop: 6 }} />
+                      <Text className="flex-1 text-[13px] text-text-secondary leading-5">{tip}</Text>
                     </View>
                   ))}
                 </Card>
               )}
 
               {totalSessions < 4 && (
-                <Card style={styles.emptyCard}>
+                <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
                   <Ionicons name="analytics-outline" size={40} color={Colors.textMuted} />
-                  <Text style={styles.emptyTitle}>Keep logging!</Text>
-                  <Text style={styles.emptySub}>Log {4 - totalSessions} more session{4 - totalSessions !== 1 ? 's' : ''} to unlock full trend analysis.</Text>
+                  <Text className="text-[15px] font-bold text-text-secondary">Keep logging!</Text>
+                  <Text className="text-[13px] text-text-muted text-center leading-5">
+                    Log {4 - totalSessions} more session{4 - totalSessions !== 1 ? 's' : ''} to unlock full trend analysis.
+                  </Text>
                 </Card>
               )}
             </>
           )}
 
-          <View style={{ height: 40 }} />
+          <View className="h-10" />
         </ScrollView>
       </SafeAreaView>
     </>
@@ -401,11 +455,14 @@ function PRCard({ label, value, unit, color, icon }: {
   color: string; icon: React.ComponentProps<typeof Ionicons>['name'];
 }) {
   return (
-    <View style={[prStyles.card, { borderTopColor: color }]}>
+    <View
+      className="bg-surface-elevated rounded-2xl p-3 items-center gap-0.5 w-[110px] border-t-[3px]"
+      style={{ borderTopColor: color }}
+    >
       <Ionicons name={icon} size={14} color={color} />
-      <Text style={prStyles.value}>{value}</Text>
-      <Text style={prStyles.unit}>{unit}</Text>
-      <Text style={prStyles.label}>{label}</Text>
+      <Text className="text-[24px] font-extrabold text-text-primary">{value}</Text>
+      <Text className="text-[11px] text-text-secondary">{unit}</Text>
+      <Text className="text-[11px] text-text-muted text-center">{label}</Text>
     </View>
   );
 }
@@ -417,8 +474,8 @@ function ExerciseLineChart({ data, color, unit }: {
 }) {
   if (data.length < 2) {
     return (
-      <View style={chartStyles.empty}>
-        <Text style={chartStyles.emptyText}>Not enough data</Text>
+      <View className="h-[60px] items-center justify-center">
+        <Text className="text-[13px] text-text-muted">Not enough data</Text>
       </View>
     );
   }
@@ -445,9 +502,7 @@ function ExerciseLineChart({ data, color, unit }: {
   return (
     <View>
       <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 4}>
-        {/* Area fill */}
         <Polygon points={areaPoints} fill={color + '22'} />
-        {/* Line */}
         <Polyline
           points={linePoints}
           fill="none"
@@ -456,207 +511,16 @@ function ExerciseLineChart({ data, color, unit }: {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Dots */}
         {points.map((p, i) => (
           <Circle key={i} cx={p.x} cy={p.y} r={4} fill={color} />
         ))}
-        {/* Y-axis labels */}
         <SvgText x={0} y={pad - 2} fontSize={9} fill={Colors.textMuted}>{maxY}</SvgText>
         <SvgText x={0} y={CHART_HEIGHT - 2} fontSize={9} fill={Colors.textMuted}>{minY}</SvgText>
       </Svg>
-      {/* X-axis dates */}
-      <View style={chartStyles.xAxis}>
-        <Text style={chartStyles.axisLabel}>{format(new Date(data[0].x), 'MMM d')}</Text>
-        <Text style={chartStyles.axisLabel}>{format(new Date(data[data.length - 1].x), 'MMM d')}</Text>
+      <View className="flex-row justify-between mt-0.5">
+        <Text className="text-[11px] text-text-muted">{format(new Date(data[0].x), 'MMM d')}</Text>
+        <Text className="text-[11px] text-text-muted">{format(new Date(data[data.length - 1].x), 'MMM d')}</Text>
       </View>
     </View>
   );
 }
-
-// ─── Styles ────────────────────────────────────────────────────────────────
-
-const prStyles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    borderTopWidth: 3,
-    padding: Spacing.md,
-    alignItems: 'center',
-    gap: 2,
-    width: 110,
-  },
-  value: { fontSize: Typography.sizes.xl, fontWeight: '800', color: Colors.textPrimary },
-  unit: { fontSize: Typography.sizes.xs, color: Colors.textSecondary },
-  label: { fontSize: Typography.sizes.xs, color: Colors.textMuted, textAlign: 'center' },
-});
-
-const chartStyles = StyleSheet.create({
-  empty: { height: 60, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { fontSize: Typography.sizes.sm, color: Colors.textMuted },
-  xAxis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
-  axisLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-});
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  loading: { color: Colors.textSecondary, textAlign: 'center', marginTop: 40 },
-  infoCard: {
-    backgroundColor: Colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-    padding: Spacing.base,
-    gap: Spacing.xs,
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  exerciseName: { flex: 1, fontSize: Typography.sizes.xl, fontWeight: '700', color: Colors.textPrimary },
-  equipment: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
-
-  // Tab bar
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.base,
-  },
-  tab: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: { borderBottomColor: Colors.accent },
-  tabText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textMuted },
-  tabTextActive: { color: Colors.accent },
-
-  content: { padding: Spacing.base, gap: Spacing.md },
-
-  // PR scroll
-  prScroll: { gap: Spacing.sm, paddingRight: Spacing.sm },
-
-  // Metric chips
-  metricRow: { flexDirection: 'row', gap: Spacing.sm },
-  metricChip: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  metricChipActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
-  metricChipText: { fontSize: Typography.sizes.xs, fontWeight: '600', color: Colors.textSecondary },
-  metricChipTextActive: { color: Colors.accent },
-
-  // Chart
-  chartCard: { gap: Spacing.sm },
-  cardTitle: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-
-  // Empty state
-  emptyCard: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
-  emptyTitle: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textSecondary },
-  emptySub: { fontSize: Typography.sizes.sm, color: Colors.textMuted, textAlign: 'center', lineHeight: 18 },
-
-  // Session history
-  sessionCard: { gap: 0, padding: 0, overflow: 'hidden' },
-  sessionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  sessionDate: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  sessionName: { fontSize: Typography.sizes.base, fontWeight: '600', color: Colors.textPrimary },
-  sessionMeta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  sessionVolume: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.accentLight },
-  setList: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
-    gap: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.sm,
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  setNum: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    width: 20,
-  },
-  setWeight: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textPrimary },
-  setReps: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
-  set1RM: { fontSize: Typography.sizes.xs, color: Colors.teal, marginLeft: 'auto' as any },
-  rpeChip: {
-    backgroundColor: Colors.amberMuted,
-    borderRadius: Radius.xs,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  rpeText: { fontSize: 10, fontWeight: '600', color: Colors.amber },
-
-  // Insights
-  trendCard: { gap: Spacing.md },
-  trendHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  trendIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trendLabel: { fontSize: Typography.sizes.base, fontWeight: '700' },
-  adviceText: { fontSize: Typography.sizes.sm, color: Colors.textSecondary, lineHeight: 20 },
-
-  recordsCard: { gap: Spacing.sm },
-  recordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  recordLabel: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textPrimary, width: 80 },
-  recordValue: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.accent },
-  recordDate: { fontSize: Typography.sizes.xs, color: Colors.textMuted, marginLeft: Spacing.sm },
-  recordEmpty: { fontSize: Typography.sizes.base, color: Colors.textMuted },
-
-  nextCard: { gap: Spacing.sm },
-  nextHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  nextValue: { fontSize: Typography.sizes.xxl, fontWeight: '800', color: Colors.textPrimary },
-  nextSub: { fontSize: Typography.sizes.sm, color: Colors.textMuted },
-
-  coachCard: { gap: Spacing.md },
-  tipRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-  tipDot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: Colors.accent,
-    marginTop: 6,
-    flexShrink: 0,
-  },
-  tipText: { flex: 1, fontSize: Typography.sizes.sm, color: Colors.textSecondary, lineHeight: 20 },
-
-  videosCard: { gap: Spacing.md },
-  videoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  videoCell: { width: '48%', gap: 4 },
-  videoThumb: { width: '100%', aspectRatio: 16 / 9, borderRadius: Radius.sm, backgroundColor: Colors.surfaceElevated },
-  videoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  videoDate: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-});

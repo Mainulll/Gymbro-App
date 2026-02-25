@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   SectionList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,10 +12,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutStore } from '../../src/store/workoutStore';
 import { getDatabase } from '../../src/db';
-import { getAllExerciseTemplates, searchExerciseTemplates } from '../../src/db/queries/exercises';
+import { getAllExerciseTemplates } from '../../src/db/queries/exercises';
 import { ExerciseTemplate, MuscleGroup } from '../../src/types';
 import { MUSCLE_GROUP_LABELS, MUSCLE_GROUP_ORDER } from '../../src/constants/exercises';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 import { Badge } from '../../src/components/ui/Badge';
 
 type Section = { title: string; data: ExerciseTemplate[] };
@@ -55,7 +54,6 @@ export default function ExerciseSelectScreen() {
     setFiltered(results);
   }, [query, selectedMuscle, allExercises]);
 
-  // Group by muscle if no search query
   const sections: Section[] = query.trim()
     ? [{ title: 'Results', data: filtered }]
     : MUSCLE_GROUP_ORDER.filter((m) => !selectedMuscle || m === selectedMuscle)
@@ -77,13 +75,14 @@ export default function ExerciseSelectScreen() {
     const isAdding = adding === item.id;
     return (
       <TouchableOpacity
-        style={styles.exerciseRow}
+        className="flex-row items-center gap-2 px-4 py-3"
+        style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
         onPress={() => handleSelect(item)}
         disabled={!!adding}
       >
-        <View style={styles.exerciseInfo}>
-          <Text style={styles.exerciseName}>{item.name}</Text>
-          <Text style={styles.equipment}>{item.equipment}</Text>
+        <View className="flex-1 gap-0.5">
+          <Text className="text-[15px] font-medium text-text-primary">{item.name}</Text>
+          <Text className="text-[13px] text-text-muted">{item.equipment}</Text>
         </View>
         {item.isCustom && <Badge label="Custom" variant="accent" />}
         {isAdding ? (
@@ -96,16 +95,16 @@ export default function ExerciseSelectScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
       {/* Search */}
-      <View style={styles.searchBar}>
+      <View className="flex-row items-center gap-2 m-4 bg-surface-elevated rounded-xl px-3 border border-border">
         <Ionicons name="search" size={18} color={Colors.textMuted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Search exercises..."
           placeholderTextColor={Colors.textMuted}
-          style={styles.searchInput}
+          className="flex-1 text-[15px] text-text-primary py-3"
           autoFocus
           keyboardAppearance="dark"
           returnKeyType="search"
@@ -119,16 +118,21 @@ export default function ExerciseSelectScreen() {
         data={MUSCLE_GROUP_ORDER}
         keyExtractor={(m) => m}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterChips}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}
         renderItem={({ item: m }) => (
           <TouchableOpacity
-            style={[
-              styles.chip,
-              selectedMuscle === m && styles.chipActive,
-            ]}
+            className={`px-3 py-1 rounded-full border ${
+              selectedMuscle === m
+                ? 'bg-accent/15 border-accent'
+                : 'bg-surface-elevated border-border'
+            }`}
             onPress={() => setSelectedMuscle(selectedMuscle === m ? null : m)}
           >
-            <Text style={[styles.chipText, selectedMuscle === m && styles.chipTextActive]}>
+            <Text
+              className={`text-[13px] font-medium ${
+                selectedMuscle === m ? 'text-accent-light' : 'text-text-secondary'
+              }`}
+            >
               {MUSCLE_GROUP_LABELS[m]}
             </Text>
           </TouchableOpacity>
@@ -141,8 +145,16 @@ export default function ExerciseSelectScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         renderSectionHeader={({ section }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+          <View
+            className="bg-surface px-4 py-2"
+            style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
+          >
+            <Text
+              className="text-[13px] font-bold text-text-secondary uppercase"
+              style={{ letterSpacing: 0.8 }}
+            >
+              {section.title}
+            </Text>
           </View>
         )}
         stickySectionHeadersEnabled
@@ -152,80 +164,3 @@ export default function ExerciseSelectScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surface },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    margin: Spacing.base,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-    paddingVertical: Spacing.md,
-  },
-  filterChips: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  chipActive: {
-    backgroundColor: Colors.accentMuted,
-    borderColor: Colors.accent,
-  },
-  chipText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-  chipTextActive: { color: Colors.accentLight },
-  sectionHeader: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  sectionTitle: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  exerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  exerciseInfo: { flex: 1, gap: 2 },
-  exerciseName: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '500',
-    color: Colors.textPrimary,
-  },
-  equipment: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-  },
-});

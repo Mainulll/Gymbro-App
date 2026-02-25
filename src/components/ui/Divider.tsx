@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Spacing } from '../../constants/theme';
+import { View, ViewStyle } from 'react-native';
 
 interface DividerProps {
   style?: ViewStyle;
@@ -10,19 +9,8 @@ interface DividerProps {
 export function Divider({ style, inset = 0 }: DividerProps) {
   return (
     <View
-      style={[
-        styles.divider,
-        inset > 0 && { marginLeft: inset },
-        style,
-      ]}
+      className="bg-border my-1"
+      style={[{ height: 0.5 }, inset > 0 && { marginLeft: inset }, style]}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.xs,
-  },
-});

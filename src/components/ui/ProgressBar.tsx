@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Radius, Typography } from '../../constants/theme';
+import { View, Text, ViewStyle } from 'react-native';
+import { Colors } from '../../constants/theme';
 
 interface ProgressBarProps {
   progress: number; // 0-1
@@ -26,43 +26,28 @@ export function ProgressBar({
   return (
     <View style={style}>
       {(label || valueLabel) && (
-        <View style={styles.labelRow}>
-          {label && <Text style={styles.label}>{label}</Text>}
-          {valueLabel && <Text style={styles.valueLabel}>{valueLabel}</Text>}
+        <View className="flex-row justify-between mb-1">
+          {label && <Text className="text-[13px] text-text-secondary font-medium">{label}</Text>}
+          {valueLabel && <Text className="text-[13px] text-text-secondary">{valueLabel}</Text>}
         </View>
       )}
-      <View style={[styles.track, { backgroundColor, height, borderRadius: height / 2 }]}>
+      <View
+        style={{
+          backgroundColor,
+          height,
+          borderRadius: height / 2,
+          overflow: 'hidden',
+        }}
+      >
         <View
-          style={[
-            styles.fill,
-            {
-              backgroundColor: color,
-              width: `${clampedProgress * 100}%`,
-              height,
-              borderRadius: height / 2,
-            },
-          ]}
+          style={{
+            backgroundColor: color,
+            width: `${clampedProgress * 100}%`,
+            height,
+            borderRadius: height / 2,
+          }}
         />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  valueLabel: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-  },
-  track: { overflow: 'hidden' },
-  fill: {},
-});

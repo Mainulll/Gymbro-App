@@ -1,16 +1,10 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkoutStore } from '../../src/store/workoutStore';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 
 const QUICK_NAMES = [
   'Push Day', 'Pull Day', 'Leg Day', 'Upper Body',
@@ -34,15 +28,18 @@ export default function NewWorkoutScreen() {
 
   if (activeWorkout) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.content}>
-          <View style={styles.activeInfo}>
+      <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+        <View className="flex-1 p-4 gap-3">
+          <View className="items-center gap-2 pt-6">
             <Ionicons name="barbell" size={40} color={Colors.accent} />
-            <Text style={styles.activeTitle}>Workout In Progress</Text>
-            <Text style={styles.activeName}>{activeWorkout.name}</Text>
+            <Text className="text-[20px] font-bold text-text-primary">Workout In Progress</Text>
+            <Text className="text-[15px] text-accent font-medium">{activeWorkout.name}</Text>
           </View>
-          <TouchableOpacity style={styles.resumeBtn} onPress={() => router.back()}>
-            <Text style={styles.resumeBtnText}>Resume Workout</Text>
+          <TouchableOpacity
+            className="bg-accent rounded-xl py-4 items-center mt-6"
+            onPress={() => router.back()}
+          >
+            <Text className="text-[15px] font-bold text-text-primary">Resume Workout</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -50,132 +47,49 @@ export default function NewWorkoutScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.content}>
+    <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+      <View className="flex-1 p-4 gap-3">
         {/* Name input */}
-        <Text style={styles.sectionTitle}>Workout Name</Text>
+        <Text className="text-[13px] font-semibold text-text-secondary uppercase tracking-[0.8px] mt-2">
+          Workout Name
+        </Text>
         <TextInput
           value={name}
           onChangeText={setName}
           placeholder="e.g. Push Day, Leg Day..."
           placeholderTextColor={Colors.textMuted}
-          style={styles.nameInput}
+          className="bg-surface-elevated rounded-xl border border-border px-4 text-[17px] text-text-primary min-h-[50px]"
+          style={{ paddingVertical: 12 }}
           keyboardAppearance="dark"
           returnKeyType="done"
         />
 
         {/* Quick names */}
-        <Text style={styles.sectionTitle}>Quick Start</Text>
-        <View style={styles.quickGrid}>
+        <Text className="text-[13px] font-semibold text-text-secondary uppercase tracking-[0.8px] mt-2">
+          Quick Start
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
           {QUICK_NAMES.map((n) => (
             <TouchableOpacity
               key={n}
-              style={styles.quickBtn}
+              className="px-3 py-2 rounded-xl bg-surface-elevated border border-border"
               onPress={() => handleStart(n)}
             >
-              <Text style={styles.quickBtnText}>{n}</Text>
+              <Text className="text-[13px] font-semibold text-text-secondary">{n}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Start empty */}
         <TouchableOpacity
-          style={styles.startEmptyBtn}
+          className="flex-row items-center justify-center gap-2 bg-accent rounded-xl py-4 mt-auto"
           onPress={() => handleStart()}
           disabled={loading}
         >
           <Ionicons name="add-circle" size={20} color={Colors.textPrimary} />
-          <Text style={styles.startEmptyText}>Start Empty Workout</Text>
+          <Text className="text-[15px] font-bold text-text-primary">Start Empty Workout</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surface },
-  content: {
-    padding: Spacing.base,
-    gap: Spacing.md,
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.sm,
-  },
-  nameInput: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.sizes.md,
-    color: Colors.textPrimary,
-    minHeight: 50,
-  },
-  quickGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  quickBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  quickBtnText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  startEmptyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.base,
-    marginTop: 'auto',
-  },
-  startEmptyText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  activeInfo: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingTop: Spacing.xl,
-  },
-  activeTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  activeName: {
-    fontSize: Typography.sizes.base,
-    color: Colors.accent,
-    fontWeight: '500',
-  },
-  resumeBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.base,
-    alignItems: 'center',
-    marginTop: Spacing.xl,
-  },
-  resumeBtnText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-});

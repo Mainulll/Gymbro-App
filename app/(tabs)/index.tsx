@@ -4,9 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -22,7 +20,7 @@ import { useWorkoutStore } from '../../src/store/workoutStore';
 import { useSettingsStore } from '../../src/store/settingsStore';
 import { useHealthStore } from '../../src/store/healthStore';
 import { ProgressRing } from '../../src/components/ui/ProgressRing';
-import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { Colors, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import {
   formatDateISO,
   getWeekStart,
@@ -98,21 +96,27 @@ export default function HomeScreen() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={{ padding: 16, gap: 12 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View className="flex-row items-start justify-between pt-1 mb-1">
           <View>
-            <Text style={styles.greeting}>{greeting} 👋</Text>
-            <View style={styles.logoRow}>
+            <Text className="text-[13px] font-medium text-text-secondary">{greeting} 👋</Text>
+            <View className="flex-row items-center gap-2" style={{ marginTop: 2 }}>
               <AppLogo size={26} />
-              <Text style={styles.appName}>GymBro</Text>
+              <Text className="text-[34px] font-extrabold text-text-primary" style={{ letterSpacing: -1 }}>
+                GymBro
+              </Text>
             </View>
           </View>
-          <TouchableOpacity onPress={() => router.push('/export')} style={styles.exportBtn}>
+          <TouchableOpacity
+            onPress={() => router.push('/export')}
+            className="w-10 h-10 rounded-full bg-accent/15 items-center justify-center border"
+            style={{ borderColor: 'rgba(124,111,255,0.3)' }}
+          >
             <Ionicons name="share-outline" size={20} color={Colors.accentLight} />
           </TouchableOpacity>
         </View>
@@ -120,7 +124,8 @@ export default function HomeScreen() {
         {/* Active workout banner */}
         {activeWorkout && (
           <TouchableOpacity
-            style={styles.activeBanner}
+            className="rounded-2xl border overflow-hidden"
+            style={{ borderColor: 'rgba(124,111,255,0.4)' }}
             onPress={() => router.push('/(tabs)/workout')}
             activeOpacity={0.85}
           >
@@ -128,17 +133,28 @@ export default function HomeScreen() {
               colors={['rgba(124,111,255,0.25)', 'rgba(0,217,192,0.15)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.activeBannerGrad}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}
             >
-              <View style={styles.activeDot} />
-              <Text style={styles.activeBannerText}>{activeWorkout.name} in progress</Text>
+              <View
+                style={{
+                  width: 8, height: 8, borderRadius: 4,
+                  backgroundColor: Colors.mint,
+                  shadowColor: Colors.mint,
+                  shadowOpacity: 0.8,
+                  shadowRadius: 4,
+                  shadowOffset: { width: 0, height: 0 },
+                }}
+              />
+              <Text className="flex-1 text-[15px] font-semibold text-text-primary">
+                {activeWorkout.name} in progress
+              </Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.accentLight} />
             </LinearGradient>
           </TouchableOpacity>
         )}
 
         {/* Stats row */}
-        <View style={styles.statsRow}>
+        <View className="flex-row gap-2">
           <StatCard
             label="This Week"
             value={String(weekStats.workoutCount)}
@@ -170,7 +186,8 @@ export default function HomeScreen() {
 
         {/* Calories widget */}
         <TouchableOpacity
-          style={styles.calorieCard}
+          className="rounded-2xl overflow-hidden border"
+          style={{ borderColor: 'rgba(255,107,157,0.25)' }}
           onPress={() => router.push('/(tabs)/calories')}
           activeOpacity={0.88}
         >
@@ -178,31 +195,47 @@ export default function HomeScreen() {
             colors={['rgba(255,107,157,0.18)', 'rgba(124,111,255,0.12)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.calorieGrad}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, gap: 12 }}
           >
-            <View style={styles.calorieLeft}>
-              <View style={styles.calorieLabelRow}>
+            <View className="flex-1 gap-1">
+              <View className="flex-row items-center" style={{ gap: 5 }}>
                 <Ionicons name="flame" size={16} color={Colors.pink} />
-                <Text style={styles.calorieSectionLabel}>Today's Nutrition</Text>
+                <Text className="text-[11px] font-bold text-text-secondary uppercase" style={{ letterSpacing: 0.6 }}>
+                  Today's Nutrition
+                </Text>
               </View>
-              <Text style={styles.calorieValue}>
+              <Text className="text-[24px] font-bold text-text-primary" style={{ letterSpacing: -0.5 }}>
                 {Math.round(todayCalories.totalCalories)}
-                <Text style={styles.calorieGoal}> / {settings.dailyCalorieGoal} kcal</Text>
+                <Text className="text-[13px] text-text-muted font-normal">
+                  {' '}/ {settings.dailyCalorieGoal} kcal
+                </Text>
               </Text>
-              <View style={styles.progressTrack}>
+              <View
+                style={{
+                  height: 4,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  marginTop: 2,
+                }}
+              >
                 <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${Math.min(100, calorieProgress * 100)}%` },
-                  ]}
+                  style={{
+                    height: '100%',
+                    width: `${Math.min(100, calorieProgress * 100)}%`,
+                    backgroundColor: Colors.pink,
+                    borderRadius: 2,
+                  }}
                 />
               </View>
-              <Text style={styles.calorieRemaining}>
+              <Text className="text-[11px] text-text-muted">
                 {Math.max(0, settings.dailyCalorieGoal - Math.round(todayCalories.totalCalories))} kcal remaining
               </Text>
             </View>
             <ProgressRing size={72} strokeWidth={7} progress={calorieProgress} color={Colors.pink}>
-              <Text style={styles.ringPct}>{Math.min(100, Math.round(calorieProgress * 100))}%</Text>
+              <Text className="text-[11px] font-bold text-text-primary">
+                {Math.min(100, Math.round(calorieProgress * 100))}%
+              </Text>
             </ProgressRing>
           </LinearGradient>
         </TouchableOpacity>
@@ -210,7 +243,8 @@ export default function HomeScreen() {
         {/* Home Gym Widget */}
         {settings.homeGymName && (
           <TouchableOpacity
-            style={styles.gymWidget}
+            className="rounded-2xl overflow-hidden border"
+            style={{ borderColor: 'rgba(0,217,192,0.25)' }}
             onPress={() => router.push('/gym/select?checkIn=true')}
             activeOpacity={0.85}
           >
@@ -218,17 +252,17 @@ export default function HomeScreen() {
               colors={['rgba(0,217,192,0.18)', 'rgba(0,217,192,0.06)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.gymWidgetGrad}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }}
             >
-              <View style={[styles.gymWidgetIcon, { backgroundColor: Colors.tealMuted }]}>
+              <View className="w-9 h-9 rounded-[10px] bg-teal/15 items-center justify-center">
                 <Ionicons name="location" size={18} color={Colors.teal} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gymWidgetName} numberOfLines={1}>{settings.homeGymName}</Text>
-                <Text style={styles.gymWidgetCount}>
-                  {homeGymCount === 1
-                    ? 'You trained here today ✓'
-                    : 'Tap to check in →'}
+                <Text className="text-[15px] font-bold text-text-primary" numberOfLines={1}>
+                  {settings.homeGymName}
+                </Text>
+                <Text className="text-[11px] text-teal" style={{ marginTop: 1 }}>
+                  {homeGymCount === 1 ? 'You trained here today ✓' : 'Tap to check in →'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={Colors.teal} />
@@ -239,14 +273,14 @@ export default function HomeScreen() {
         {/* Weight mini-chart */}
         {weightLogs.length >= 1 && (
           <TouchableOpacity
-            style={styles.miniCard}
+            className="bg-surface rounded-2xl border border-border p-3 gap-2"
             onPress={() => router.push('/health/index')}
             activeOpacity={0.85}
           >
-            <View style={styles.miniCardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1">
                 <Ionicons name="scale-outline" size={14} color={Colors.accent} />
-                <Text style={styles.miniCardTitle}>Weight</Text>
+                <Text className="text-[13px] font-bold text-text-primary">Weight</Text>
               </View>
               <Ionicons name="chevron-forward" size={13} color={Colors.textMuted} />
             </View>
@@ -257,14 +291,14 @@ export default function HomeScreen() {
         {/* Sleep mini-chart */}
         {sleepLogs.length >= 1 && (
           <TouchableOpacity
-            style={styles.miniCard}
+            className="bg-surface rounded-2xl border border-border p-3 gap-2"
             onPress={() => router.push('/health/index')}
             activeOpacity={0.85}
           >
-            <View style={styles.miniCardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1">
                 <Ionicons name="moon-outline" size={14} color={Colors.accent} />
-                <Text style={styles.miniCardTitle}>Sleep</Text>
+                <Text className="text-[13px] font-bold text-text-primary">Sleep</Text>
               </View>
               <Ionicons name="chevron-forward" size={13} color={Colors.textMuted} />
             </View>
@@ -273,15 +307,18 @@ export default function HomeScreen() {
         )}
 
         {/* Mood widget */}
-        <MoodWidget
-          moodLogs={moodLogs}
-          onLog={logMood}
-          onRemove={removeMoodLog}
-        />
+        <MoodWidget moodLogs={moodLogs} onLog={logMood} onRemove={removeMoodLog} />
 
         {/* Start Workout CTA */}
         <TouchableOpacity
-          style={styles.startBtnOuter}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            shadowColor: Colors.accent,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.45,
+            shadowRadius: 14,
+            elevation: 10,
+          }}
           onPress={() => router.push('/workout/new')}
           activeOpacity={0.85}
         >
@@ -289,20 +326,20 @@ export default function HomeScreen() {
             colors={[Colors.accent, Colors.accentDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.startBtnGrad}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16 }}
           >
             <Ionicons name="barbell" size={22} color="white" />
-            <Text style={styles.startBtnText}>
+            <Text className="text-[17px] font-bold text-white" style={{ letterSpacing: 0.3 }}>
               {activeWorkout ? '▶  Resume Workout' : 'Start Workout'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
 
         {/* Weekly chart */}
-        <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>This Week</Text>
-            <Text style={styles.chartSubtitle}>Volume per day</Text>
+        <View className="bg-surface rounded-2xl border border-border p-4 gap-2">
+          <View className="flex-row items-baseline justify-between">
+            <Text className="text-[15px] font-bold text-text-primary">This Week</Text>
+            <Text className="text-[11px] text-text-muted">Volume per day</Text>
           </View>
           <WeekBarChart volumes={weekDayVolumes} />
         </View>
@@ -310,21 +347,22 @@ export default function HomeScreen() {
         {/* Recent workouts */}
         {recentSessions.length > 0 && (
           <>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Recent Workouts</Text>
+            <View className="flex-row items-center justify-between mt-1">
+              <Text className="text-[15px] font-bold text-text-primary">Recent Workouts</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/history')}>
-                <Text style={styles.seeAll}>See all →</Text>
+                <Text className="text-[13px] font-semibold text-accent-light">See all →</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recentList}
+              contentContainerStyle={{ gap: 8, paddingRight: 16 }}
             >
               {recentSessions.map((s, i) => (
                 <TouchableOpacity
                   key={s.id}
-                  style={styles.recentCard}
+                  className="bg-surface rounded-2xl border overflow-hidden p-3 gap-1"
+                  style={{ borderColor: 'rgba(255,255,255,0.08)', width: 145 }}
                   onPress={() => router.push(`/workout/${s.id}`)}
                   activeOpacity={0.85}
                 >
@@ -332,13 +370,24 @@ export default function HomeScreen() {
                     colors={RECENT_GRADIENTS[i % RECENT_GRADIENTS.length]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.recentGradTop}
+                    style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                      borderTopLeftRadius: 16, borderTopRightRadius: 16,
+                    }}
                   />
-                  <Text style={styles.recentName} numberOfLines={2}>{s.name}</Text>
-                  <Text style={styles.recentDate}>{formatDisplayDate(s.startedAt)}</Text>
-                  <View style={styles.recentDurationRow}>
+                  <Text
+                    className="text-[13px] font-bold text-text-primary"
+                    style={{ marginTop: 6 }}
+                    numberOfLines={2}
+                  >
+                    {s.name}
+                  </Text>
+                  <Text className="text-[11px] text-text-muted">{formatDisplayDate(s.startedAt)}</Text>
+                  <View className="flex-row items-center" style={{ gap: 3 }}>
                     <Ionicons name="time-outline" size={12} color={Colors.accentLight} />
-                    <Text style={styles.recentDuration}>{formatDurationMinutes(s.durationSeconds)}</Text>
+                    <Text className="text-[11px] font-semibold text-accent-light">
+                      {formatDurationMinutes(s.durationSeconds)}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -358,14 +407,14 @@ const MOOD_COLORS: Record<number, string> = {
 };
 
 function WeightMiniChart({ logs }: { logs: BodyWeightLog[] }) {
-  const CHART_W = SCREEN_WIDTH - Spacing.base * 4;
+  const CHART_W = SCREEN_WIDTH - 64;
   const CHART_H = 60;
   if (logs.length < 2) {
     const latest = logs[0];
     return (
       <View style={{ gap: 2 }}>
-        <Text style={styles.miniChartValue}>{latest.weightKg.toFixed(1)} kg</Text>
-        <Text style={styles.miniCardHint}>Log more entries to see your trend</Text>
+        <Text className="text-[20px] font-bold text-text-primary">{latest.weightKg.toFixed(1)} kg</Text>
+        <Text className="text-[11px] text-text-muted">Log more entries to see your trend</Text>
       </View>
     );
   }
@@ -386,10 +435,10 @@ function WeightMiniChart({ logs }: { logs: BodyWeightLog[] }) {
   const deltaColor = delta > 0.05 ? Colors.coral : delta < -0.05 ? Colors.mint : Colors.textMuted;
   const deltaStr = delta > 0.05 ? `↑${delta.toFixed(1)}` : delta < -0.05 ? `↓${Math.abs(delta).toFixed(1)}` : '→';
   return (
-    <View style={{ gap: Spacing.xs }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs }}>
-        <Text style={styles.miniChartValue}>{latest.weightKg.toFixed(1)} kg</Text>
-        <Text style={[styles.miniChartDelta, { color: deltaColor }]}>{deltaStr}</Text>
+    <View style={{ gap: 4 }}>
+      <View className="flex-row items-baseline gap-1">
+        <Text className="text-[20px] font-bold text-text-primary">{latest.weightKg.toFixed(1)} kg</Text>
+        <Text className="text-[13px] font-semibold" style={{ color: deltaColor }}>{deltaStr}</Text>
       </View>
       <Svg width={CHART_W} height={CHART_H}>
         <Polyline
@@ -420,24 +469,26 @@ function SleepMiniChart({ logs }: { logs: SleepLog[] }) {
   const avgQuality = last7.reduce((s, l) => s + l.quality, 0) / last7.length;
   const qualityEmoji = avgQuality >= 4.5 ? '😴' : avgQuality >= 3.5 ? '😊' : avgQuality >= 2.5 ? '😐' : '😞';
   return (
-    <View style={{ gap: Spacing.xs }}>
-      <View style={styles.sleepBars}>
+    <View style={{ gap: 4 }}>
+      <View className="flex-row items-end" style={{ gap: 6 }}>
         {Array.from({ length: 7 }, (_, i) => {
           const l = last7[i];
           const barH = l ? Math.max(4, Math.min(1, l.durationMinutes / 600) * CHART_H) : 4;
           return (
-            <View key={i} style={[styles.sleepBarTrack, { height: CHART_H }]}>
+            <View
+              key={i}
+              className="flex-1 justify-end bg-surface-elevated rounded overflow-hidden"
+              style={{ height: CHART_H }}
+            >
               <View
-                style={[
-                  styles.sleepBarFill,
-                  { height: barH, backgroundColor: l ? barColor(l.durationMinutes) : Colors.border },
-                ]}
+                className="rounded"
+                style={{ height: barH, backgroundColor: l ? barColor(l.durationMinutes) : Colors.border }}
               />
             </View>
           );
         })}
       </View>
-      <Text style={styles.miniCardHint}>
+      <Text className="text-[11px] text-text-muted">
         Avg: {avgH}h {avgM}m · Quality: {qualityEmoji}
       </Text>
     </View>
@@ -461,34 +512,44 @@ function MoodWidget({
     return formatDateISO(d);
   });
   return (
-    <View style={styles.moodCard}>
-      <View style={styles.miniCardHeader}>
-        <Text style={styles.miniCardTitle}>How are you feeling?</Text>
+    <View className="bg-surface rounded-2xl border border-border p-3 gap-2">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[13px] font-bold text-text-primary">How are you feeling?</Text>
       </View>
       {!todayMood ? (
-        <View style={styles.moodEmojiRow}>
+        <View className="flex-row justify-between">
           {([1, 2, 3, 4, 5] as const).map((m) => (
-            <TouchableOpacity key={m} style={styles.moodEmojiBtn} onPress={() => onLog(m)}>
-              <Text style={styles.moodEmojiText}>{MOOD_EMOJIS[m]}</Text>
+            <TouchableOpacity
+              key={m}
+              className="flex-1 items-center py-2 rounded-xl bg-surface-elevated"
+              style={{ marginHorizontal: 3 }}
+              onPress={() => onLog(m)}
+            >
+              <Text className="text-[24px]">{MOOD_EMOJIS[m]}</Text>
             </TouchableOpacity>
           ))}
         </View>
       ) : (
-        <View style={{ gap: Spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-            <Text style={styles.moodTodayEmoji}>{MOOD_EMOJIS[todayMood.mood]}</Text>
-            <Text style={styles.moodTodayText}>Today</Text>
-            <TouchableOpacity onPress={() => onRemove(todayMood.id)} style={styles.moodChangeBtn}>
-              <Text style={styles.moodChangeBtnText}>Change</Text>
+        <View style={{ gap: 8 }}>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-[28px]">{MOOD_EMOJIS[todayMood.mood]}</Text>
+            <Text className="text-[13px] font-semibold text-text-secondary flex-1">Today</Text>
+            <TouchableOpacity
+              className="px-2 rounded-lg bg-surface-elevated border border-border"
+              style={{ paddingVertical: 3 }}
+              onPress={() => onRemove(todayMood.id)}
+            >
+              <Text className="text-[11px] font-semibold text-text-secondary">Change</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.moodDotRow}>
+          <View className="flex-row" style={{ gap: 6 }}>
             {last7.map((date) => {
               const log = moodLogs.find((m) => m.date === date);
               return (
                 <View
                   key={date}
-                  style={[styles.moodDot, { backgroundColor: log ? MOOD_COLORS[log.mood] : Colors.border }]}
+                  className="flex-1 rounded"
+                  style={{ height: 8, backgroundColor: log ? MOOD_COLORS[log.mood] : Colors.border }}
                 />
               );
             })}
@@ -525,19 +586,22 @@ function StatCard({
   gradTo: string;
 }) {
   return (
-    <View style={styles.statCardOuter}>
+    <View className="flex-1 rounded-2xl overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
       <LinearGradient
         colors={[gradFrom, gradTo]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={styles.statCardInner}
+        style={{ padding: 12, gap: 3, alignItems: 'flex-start' }}
       >
-        <View style={[styles.statIcon, { backgroundColor: color + '22' }]}>
+        <View
+          className="w-[30px] h-[30px] rounded-lg items-center justify-center"
+          style={{ backgroundColor: color + '22', marginBottom: 2 }}
+        >
           <Ionicons name={icon} size={16} color={color} />
         </View>
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-        <Text style={styles.statUnit}>{unit}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
+        <Text className="text-[28px] font-extrabold" style={{ color, letterSpacing: -0.5 }}>{value}</Text>
+        <Text className="text-[11px] font-semibold text-text-secondary">{unit}</Text>
+        <Text className="text-[11px] text-text-muted">{label}</Text>
       </LinearGradient>
     </View>
   );
@@ -545,7 +609,7 @@ function StatCard({
 
 function WeekBarChart({ volumes }: { volumes: number[] }) {
   const max = Math.max(...volumes, 1);
-  const chartWidth = SCREEN_WIDTH - Spacing.base * 4;
+  const chartWidth = SCREEN_WIDTH - 64;
   const barGap = 8;
   const barWidth = (chartWidth - barGap * 6) / 7;
   const barMaxHeight = 56;
@@ -553,7 +617,7 @@ function WeekBarChart({ volumes }: { volumes: number[] }) {
   const today = formatDateISO(new Date());
 
   return (
-    <View style={styles.chart}>
+    <View className="gap-1">
       <Svg width="100%" height={barMaxHeight + 32}>
         <Defs>
           <SvgGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
@@ -583,11 +647,14 @@ function WeekBarChart({ volumes }: { volumes: number[] }) {
           );
         })}
       </Svg>
-      <View style={styles.chartDays}>
+      <View className="flex-row justify-between" style={{ paddingHorizontal: 2 }}>
         {days.map((d, i) => {
           const isToday = formatDateISO(d) === today;
           return (
-            <Text key={i} style={[styles.chartDayLabel, isToday && styles.chartDayToday]}>
+            <Text
+              key={i}
+              className={`text-[11px] text-center flex-1 ${isToday ? 'text-teal font-bold' : 'text-text-muted'}`}
+            >
               {getShortDayName(d)[0]}
             </Text>
           );
@@ -596,369 +663,3 @@ function WeekBarChart({ volumes }: { volumes: number[] }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, gap: Spacing.md },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingTop: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  greeting: { fontSize: Typography.sizes.sm, color: Colors.textSecondary, fontWeight: '500' },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: 2,
-  },
-  appName: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    letterSpacing: -1,
-  },
-  exportBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(124,111,255,0.3)',
-  },
-
-  // Active banner
-  activeBanner: {
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(124,111,255,0.4)',
-    overflow: 'hidden',
-  },
-  activeBannerGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-  },
-  activeDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.mint,
-    shadowColor: Colors.mint,
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  activeBannerText: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-
-  // Stats
-  statsRow: { flexDirection: 'row', gap: Spacing.sm },
-  statCardOuter: {
-    flex: 1,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  statCardInner: {
-    padding: Spacing.md,
-    gap: 3,
-    alignItems: 'flex-start',
-  },
-  statIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: Typography.sizes.xxl,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  statUnit: { fontSize: Typography.sizes.xs, color: Colors.textSecondary, fontWeight: '600' },
-  statLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-
-  // Calorie card
-  calorieCard: {
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,157,0.25)',
-  },
-  calorieGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.base,
-    gap: Spacing.md,
-  },
-  calorieLeft: { flex: 1, gap: Spacing.xs },
-  calorieLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  calorieSectionLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  calorieValue: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  calorieGoal: { fontSize: Typography.sizes.sm, color: Colors.textMuted, fontWeight: '400' },
-  progressTrack: {
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginTop: 2,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.pink,
-    borderRadius: 2,
-  },
-  calorieRemaining: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  ringPct: { fontSize: Typography.sizes.xs, fontWeight: '700', color: Colors.textPrimary },
-
-  // Gym community widget
-  gymWidget: {
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0,217,192,0.25)',
-  },
-  gymWidgetGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.md,
-  },
-  gymWidgetIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gymWidgetName: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  gymWidgetCount: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.teal,
-    marginTop: 1,
-  },
-
-  // Start button
-  startBtnOuter: {
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 10,
-  },
-  startBtnGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.base + 2,
-    borderRadius: Radius.lg,
-  },
-  startBtnText: {
-    fontSize: Typography.sizes.md,
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: 0.3,
-  },
-
-  // Chart
-  chartCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.base,
-    gap: Spacing.sm,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  chartTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  chartSubtitle: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  chart: { gap: 4 },
-  chartDays: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
-  chartDayLabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted, textAlign: 'center', flex: 1 },
-  chartDayToday: { color: Colors.teal, fontWeight: '700' },
-
-  // Section
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.xs,
-  },
-  sectionTitle: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary },
-  seeAll: { fontSize: Typography.sizes.sm, color: Colors.accentLight, fontWeight: '600' },
-
-  // Recent
-  recentList: { gap: Spacing.sm, paddingRight: Spacing.base },
-  recentCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: Spacing.md,
-    width: 145,
-    gap: Spacing.xs,
-    overflow: 'hidden',
-  },
-  recentGradTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderTopLeftRadius: Radius.lg,
-    borderTopRightRadius: Radius.lg,
-  },
-  recentName: { fontSize: Typography.sizes.sm, fontWeight: '700', color: Colors.textPrimary, marginTop: 6 },
-  recentDate: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  recentDurationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  recentDuration: { fontSize: Typography.sizes.xs, color: Colors.accentLight, fontWeight: '600' },
-
-  // Health mini-cards
-  miniCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  miniCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  miniCardTitle: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  miniCardHint: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  miniChartValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  miniChartDelta: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-  },
-
-  // Sleep bars
-  sleepBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  sleepBarTrack: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  sleepBarFill: {
-    borderRadius: 4,
-  },
-
-  // Mood widget
-  moodCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  moodEmojiRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  moodEmojiBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    marginHorizontal: 3,
-  },
-  moodEmojiText: {
-    fontSize: 24,
-  },
-  moodTodayEmoji: {
-    fontSize: 28,
-  },
-  moodTodayText: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    flex: 1,
-  },
-  moodChangeBtn: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  moodChangeBtnText: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  moodDotRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  moodDot: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-  },
-});

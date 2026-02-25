@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  StyleSheet,
   TextInput,
   Image,
   Alert,
@@ -18,7 +17,7 @@ import { useSettingsStore } from '../../src/store/settingsStore';
 import { Card } from '../../src/components/ui/Card';
 import { AppLogo } from '../../src/components/ui/AppLogo';
 import { Divider } from '../../src/components/ui/Divider';
-import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { Colors, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { ActivityLevel, GoalType, Sex } from '../../src/types';
 import {
   fromDisplayWeight,
@@ -154,39 +153,50 @@ export default function ProfileScreen() {
     ? String(toDisplayWeightNumber(settings.targetWeightKg, settings.weightUnit) ?? '') : '';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }} keyboardShouldPersistTaps="handled">
 
         {/* Avatar + Name */}
-        <View style={styles.avatarSection}>
-          <TouchableOpacity style={styles.avatarWrap} onPress={pickProfilePhoto} activeOpacity={0.8}>
+        <View className="items-center py-5 gap-2">
+          <TouchableOpacity onPress={pickProfilePhoto} activeOpacity={0.8}>
             {settings.profilePhotoUri ? (
-              <Image source={{ uri: settings.profilePhotoUri }} style={styles.avatar} />
+              <Image
+                source={{ uri: settings.profilePhotoUri }}
+                className="rounded-full bg-surface-elevated"
+                style={{ width: 90, height: 90 }}
+              />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitials}>
+              <View
+                className="rounded-full bg-accent/15 border-2 border-accent items-center justify-center"
+                style={{ width: 90, height: 90 }}
+              >
+                <Text className="text-[28px] font-bold text-accent">
                   {settings.displayName ? getInitials(settings.displayName) : '?'}
                 </Text>
               </View>
             )}
-            <View style={styles.avatarBadge}>
+            <View
+              className="absolute bg-accent items-center justify-center"
+              style={{ bottom: 2, right: 2, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.background }}
+            >
               <Ionicons name="camera" size={11} color="white" />
             </View>
           </TouchableOpacity>
           <NameInput value={settings.displayName} onSave={(v) => update({ displayName: v })} />
-          <Text style={styles.avatarHint}>Tap to change photo</Text>
+          <Text className="text-[11px] text-text-muted">Tap to change photo</Text>
         </View>
 
         {/* ── Body Stats ── */}
         <SectionHeader label="Body Stats" />
-        <Card style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Biological Sex</Text>
-            <View style={styles.segmented}>
+        <Card style={{ gap: 8 }}>
+          <View className="flex-row items-center justify-between py-1 gap-2">
+            <Text className="text-[15px] text-text-primary font-medium">Biological Sex</Text>
+            <View className="flex-row bg-surface-elevated rounded-lg border border-border overflow-hidden">
               {(['male', 'female'] as Sex[]).map((s) => (
                 <TouchableOpacity
                   key={s}
-                  style={[styles.segBtn, settings.sex === s && styles.segBtnActive]}
+                  className={`flex-row items-center px-3 py-1 ${settings.sex === s ? 'bg-accent' : ''}`}
+                  style={{ minWidth: 50 }}
                   onPress={() => update({ sex: s })}
                 >
                   <Ionicons
@@ -195,7 +205,7 @@ export default function ProfileScreen() {
                     color={settings.sex === s ? 'white' : Colors.textSecondary}
                     style={{ marginRight: 3 }}
                   />
-                  <Text style={[styles.segBtnText, settings.sex === s && styles.segBtnTextActive]}>
+                  <Text className={`text-[13px] font-semibold ${settings.sex === s ? 'text-white' : 'text-text-secondary'}`}>
                     {s === 'male' ? 'Male' : 'Female'}
                   </Text>
                 </TouchableOpacity>
@@ -204,7 +214,7 @@ export default function ProfileScreen() {
           </View>
           <Divider />
 
-          <View style={styles.statsRow}>
+          <View className="flex-row gap-2">
             <GoalInput
               label="Age"
               unit="yrs"
@@ -243,7 +253,7 @@ export default function ProfileScreen() {
           </View>
           <Divider />
 
-          <View style={styles.statsRow}>
+          <View className="flex-row gap-2">
             <GoalInput
               label="Current Weight"
               unit={settings.weightUnit}
@@ -269,14 +279,17 @@ export default function ProfileScreen() {
           {bmi && bmiInfo && (
             <>
               <Divider />
-              <View style={styles.bmiRow}>
+              <View className="flex-row items-center justify-between py-1 gap-3">
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.bmiLabel}>BMI</Text>
-                  <Text style={styles.bmiHint}>Body Mass Index</Text>
+                  <Text className="text-[13px] text-text-primary font-semibold">BMI</Text>
+                  <Text className="text-[11px] text-text-muted" style={{ marginTop: 2 }}>Body Mass Index</Text>
                 </View>
-                <View style={[styles.bmiChip, { backgroundColor: `${bmiInfo.color}22`, borderColor: `${bmiInfo.color}55` }]}>
-                  <Text style={[styles.bmiValue, { color: bmiInfo.color }]}>{bmi}</Text>
-                  <Text style={[styles.bmiCat, { color: bmiInfo.color }]}>{bmiInfo.label}</Text>
+                <View
+                  className="rounded-xl border items-center"
+                  style={{ backgroundColor: `${bmiInfo.color}22`, borderColor: `${bmiInfo.color}55`, paddingHorizontal: 12, paddingVertical: 4, minWidth: 72 }}
+                >
+                  <Text className="text-[20px] font-extrabold" style={{ color: bmiInfo.color }}>{bmi}</Text>
+                  <Text className="text-[11px] font-semibold" style={{ marginTop: 1, color: bmiInfo.color }}>{bmiInfo.label}</Text>
                 </View>
               </View>
             </>
@@ -285,14 +298,15 @@ export default function ProfileScreen() {
 
         {/* ── Goal & Activity ── */}
         <SectionHeader label="Goal & Activity" />
-        <Card style={styles.card}>
-          <View style={styles.col}>
-            <Text style={styles.rowLabel}>Your Goal</Text>
-            <View style={styles.goalTypeRow}>
+        <Card style={{ gap: 8 }}>
+          <View className="gap-2 py-1">
+            <Text className="text-[15px] text-text-primary font-medium">Your Goal</Text>
+            <View className="flex-row gap-1">
               {GOAL_TYPES.map((g) => (
                 <TouchableOpacity
                   key={g}
-                  style={[styles.goalTypeBtn, settings.goalType === g && styles.goalTypeBtnActive]}
+                  className={`flex-1 py-2 rounded-xl border items-center ${settings.goalType === g ? 'bg-accent/15 border-accent' : 'bg-surface-elevated border-border'}`}
+                  style={{ gap: 4 }}
                   onPress={() => update({ goalType: g })}
                 >
                   <Ionicons
@@ -300,7 +314,7 @@ export default function ProfileScreen() {
                     size={15}
                     color={settings.goalType === g ? Colors.accentLight : Colors.textMuted}
                   />
-                  <Text style={[styles.goalTypeBtnText, settings.goalType === g && styles.goalTypeBtnTextActive]}>
+                  <Text className={`text-[11px] font-semibold text-center ${settings.goalType === g ? 'text-accent-light' : 'text-text-secondary'}`}>
                     {GOAL_LABELS[g]}
                   </Text>
                 </TouchableOpacity>
@@ -308,20 +322,20 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Divider />
-          <View style={styles.col}>
-            <Text style={styles.rowLabel}>Activity Level</Text>
-            <View style={styles.activityCol}>
+          <View className="gap-2 py-1">
+            <Text className="text-[15px] text-text-primary font-medium">Activity Level</Text>
+            <View className="gap-1">
               {ACTIVITY_LEVELS.map((a) => (
                 <TouchableOpacity
                   key={a}
-                  style={[styles.activityBtn, settings.activityLevel === a && styles.activityBtnActive]}
+                  className={`flex-row items-center py-2 px-3 rounded-xl border gap-2 ${settings.activityLevel === a ? 'bg-accent/15 border-accent' : 'bg-surface-elevated border-border'}`}
                   onPress={() => update({ activityLevel: a })}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.activityBtnText, settings.activityLevel === a && styles.activityBtnTextActive]}>
+                    <Text className={`text-[15px] font-semibold ${settings.activityLevel === a ? 'text-accent-light' : 'text-text-secondary'}`}>
                       {ACTIVITY_LABELS[a]}
                     </Text>
-                    <Text style={styles.activityDesc}>{ACTIVITY_DESCS[a]}</Text>
+                    <Text className="text-[11px] text-text-muted" style={{ marginTop: 1 }}>{ACTIVITY_DESCS[a]}</Text>
                   </View>
                   {settings.activityLevel === a && (
                     <Ionicons name="checkmark-circle" size={18} color={Colors.accent} />
@@ -335,25 +349,30 @@ export default function ProfileScreen() {
           {tdee && suggestedCalories && suggestedMacros ? (
             <>
               <Divider />
-              <View style={styles.tdeeBox}>
-                <Text style={styles.tdeeSectionLabel}>Estimated Daily Targets</Text>
-                <View style={styles.tdeeStatsRow}>
+              <View className="gap-2 pt-1">
+                <Text className="text-[11px] font-bold text-text-muted uppercase" style={{ letterSpacing: 0.5 }}>
+                  Estimated Daily Targets
+                </Text>
+                <View className="flex-row gap-1 bg-surface-elevated rounded-xl p-3">
                   <TdeeStat label="TDEE" value={String(tdee)} unit="kcal" />
                   <TdeeStat label="Target" value={String(suggestedCalories)} unit="kcal" accent />
                   <TdeeStat label="Protein" value={String(suggestedMacros.protein)} unit="g" />
                   <TdeeStat label="Carbs" value={String(suggestedMacros.carbs)} unit="g" />
                   <TdeeStat label="Fat" value={String(suggestedMacros.fat)} unit="g" />
                 </View>
-                <TouchableOpacity style={styles.applyBtn} onPress={applyTDEESuggestion}>
+                <TouchableOpacity
+                  className="flex-row items-center justify-center gap-1 bg-accent rounded-xl py-2"
+                  onPress={applyTDEESuggestion}
+                >
                   <Ionicons name="checkmark-circle-outline" size={16} color="white" />
-                  <Text style={styles.applyBtnText}>Apply to Daily Goals</Text>
+                  <Text className="text-white font-bold text-[13px]">Apply to Daily Goals</Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
-            <View style={styles.tdeePrompt}>
+            <View className="flex-row items-start gap-1 pt-1" style={{ opacity: 0.7 }}>
               <Ionicons name="information-circle-outline" size={15} color={Colors.textMuted} />
-              <Text style={styles.tdeePromptText}>
+              <Text className="flex-1 text-[13px] text-text-muted" style={{ lineHeight: 18 }}>
                 Complete body stats above to get personalised calorie & macro targets.
               </Text>
             </View>
@@ -362,7 +381,7 @@ export default function ProfileScreen() {
 
         {/* ── Daily Nutrition Goals ── */}
         <SectionHeader label="Daily Nutrition Goals" />
-        <Card style={styles.card}>
+        <Card style={{ gap: 8 }}>
           <GoalInput
             label="Calories"
             unit="kcal"
@@ -370,7 +389,7 @@ export default function ProfileScreen() {
             onBlur={(v) => handleGoalChange('dailyCalorieGoal', v)}
           />
           <Divider />
-          <View style={styles.macroRow}>
+          <View className="flex-row gap-2">
             <GoalInput label="Protein" unit="g" value={String(settings.dailyProteinGoal)} onBlur={(v) => handleGoalChange('dailyProteinGoal', v)} flex />
             <GoalInput label="Carbs" unit="g" value={String(settings.dailyCarbsGoal)} onBlur={(v) => handleGoalChange('dailyCarbsGoal', v)} flex />
             <GoalInput label="Fat" unit="g" value={String(settings.dailyFatGoal)} onBlur={(v) => handleGoalChange('dailyFatGoal', v)} flex />
@@ -379,17 +398,18 @@ export default function ProfileScreen() {
 
         {/* ── Preferences ── */}
         <SectionHeader label="Workout Preferences" />
-        <Card style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Units</Text>
-            <View style={styles.segmented}>
+        <Card style={{ gap: 8 }}>
+          <View className="flex-row items-center justify-between py-1 gap-2">
+            <Text className="text-[15px] text-text-primary font-medium">Units</Text>
+            <View className="flex-row bg-surface-elevated rounded-lg border border-border overflow-hidden">
               {(['kg', 'lbs'] as const).map((u) => (
                 <TouchableOpacity
                   key={u}
-                  style={[styles.segBtn, settings.weightUnit === u && styles.segBtnActive]}
+                  className={`flex-row items-center px-3 py-1 ${settings.weightUnit === u ? 'bg-accent' : ''}`}
+                  style={{ minWidth: 50 }}
                   onPress={() => handleUnitChange(u)}
                 >
-                  <Text style={[styles.segBtnText, settings.weightUnit === u && styles.segBtnTextActive]}>
+                  <Text className={`text-[13px] font-semibold ${settings.weightUnit === u ? 'text-white' : 'text-text-secondary'}`}>
                     {u === 'kg' ? 'Metric' : 'Imperial'}
                   </Text>
                 </TouchableOpacity>
@@ -397,9 +417,9 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Divider />
-          <View style={styles.col}>
-            <Text style={styles.rowLabel}>Default Rest Timer</Text>
-            <View style={styles.restRow}>
+          <View className="gap-2 py-1">
+            <Text className="text-[15px] text-text-primary font-medium">Default Rest Timer</Text>
+            <View className="flex-row gap-2 flex-wrap">
               {REST_TIMES.map((t) => {
                 const mins = Math.floor(t / 60);
                 const secs = t % 60;
@@ -407,10 +427,11 @@ export default function ProfileScreen() {
                 return (
                   <TouchableOpacity
                     key={t}
-                    style={[styles.restBtn, settings.restTimerSeconds === t && styles.restBtnActive]}
+                    className={`px-3 py-1 rounded-lg border items-center ${settings.restTimerSeconds === t ? 'bg-accent/15 border-accent' : 'bg-surface-elevated border-border'}`}
+                    style={{ minWidth: 46 }}
                     onPress={() => update({ restTimerSeconds: t })}
                   >
-                    <Text style={[styles.restBtnText, settings.restTimerSeconds === t && styles.restBtnTextActive]}>
+                    <Text className={`text-[13px] font-semibold ${settings.restTimerSeconds === t ? 'text-accent-light' : 'text-text-secondary'}`}>
                       {label}
                     </Text>
                   </TouchableOpacity>
@@ -419,8 +440,8 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Divider />
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Haptic Feedback</Text>
+          <View className="flex-row items-center justify-between py-1 gap-2">
+            <Text className="text-[15px] text-text-primary font-medium">Haptic Feedback</Text>
             <Switch
               value={settings.hapticFeedback}
               onValueChange={(v) => update({ hapticFeedback: v })}
@@ -432,7 +453,7 @@ export default function ProfileScreen() {
 
         {/* ── Health & Body ── */}
         <SectionHeader label="Health & Body" />
-        <Card style={styles.card}>
+        <Card style={{ gap: 8 }}>
           <NavRow
             icon="barbell-outline"
             iconColor={Colors.teal}
@@ -444,7 +465,7 @@ export default function ProfileScreen() {
 
         {/* ── Community ── */}
         <SectionHeader label="Community" />
-        <Card style={styles.card}>
+        <Card style={{ gap: 8 }}>
           <NavRow
             icon="location-outline"
             iconColor={Colors.teal}
@@ -456,7 +477,7 @@ export default function ProfileScreen() {
 
         {/* ── Data ── */}
         <SectionHeader label="Data" />
-        <Card style={styles.card}>
+        <Card style={{ gap: 8 }}>
           <NavRow
             icon="share-outline"
             iconColor={Colors.mint}
@@ -468,12 +489,16 @@ export default function ProfileScreen() {
 
         {/* ── About ── */}
         <SectionHeader label="About" />
-        <Card glass style={styles.card}>
-          <View style={styles.aboutRow}>
+        <Card glass style={{ gap: 8 }}>
+          <View className="flex-row items-center gap-3">
             <AppLogo size={48} rounded />
             <View style={{ flex: 1 }}>
-              <Text style={styles.aboutAppName}>GymBro</Text>
-              <Text style={styles.aboutVersion}>Version 1.0.0 · Built with ❤️</Text>
+              <Text className="text-[17px] font-extrabold text-text-primary" style={{ letterSpacing: -0.5 }}>
+                GymBro
+              </Text>
+              <Text className="text-[11px] text-text-muted" style={{ marginTop: 2 }}>
+                Version 1.0.0 · Built with ❤️
+              </Text>
             </View>
           </View>
         </Card>
@@ -487,7 +512,11 @@ export default function ProfileScreen() {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionHeader({ label }: { label: string }) {
-  return <Text style={styles.sectionHeader}>{label}</Text>;
+  return (
+    <Text className="text-[11px] font-bold text-text-muted uppercase pt-2 px-1" style={{ letterSpacing: 0.8 }}>
+      {label}
+    </Text>
+  );
 }
 
 function NameInput({ value, onSave }: { value: string; onSave: (v: string) => void }) {
@@ -501,7 +530,8 @@ function NameInput({ value, onSave }: { value: string; onSave: (v: string) => vo
       onSubmitEditing={() => { if (local.trim()) onSave(local.trim()); }}
       placeholder="Your Name"
       placeholderTextColor={Colors.textMuted}
-      style={styles.nameInput}
+      className="text-[24px] font-bold text-text-primary text-center"
+      style={{ borderBottomWidth: 1.5, borderBottomColor: Colors.border, paddingBottom: 4, minWidth: 180 }}
       keyboardAppearance="dark"
       returnKeyType="done"
       maxLength={40}
@@ -511,10 +541,10 @@ function NameInput({ value, onSave }: { value: string; onSave: (v: string) => vo
 
 function TdeeStat({ label, value, unit, accent }: { label: string; value: string; unit: string; accent?: boolean }) {
   return (
-    <View style={styles.tdeeStat}>
-      <Text style={[styles.tdeeValue, accent && { color: Colors.accent }]}>{value}</Text>
-      <Text style={styles.tdeeUnit}>{unit}</Text>
-      <Text style={styles.tdeeLabel}>{label}</Text>
+    <View className="flex-1 items-center" style={{ gap: 1 }}>
+      <Text className={`text-[17px] font-extrabold ${accent ? 'text-accent' : 'text-text-primary'}`}>{value}</Text>
+      <Text className="text-[11px] text-text-muted">{unit}</Text>
+      <Text className="text-[10px] text-text-muted uppercase" style={{ letterSpacing: 0.3 }}>{label}</Text>
     </View>
   );
 }
@@ -528,20 +558,23 @@ function GoalInput({
   const [local, setLocal] = React.useState(value);
   React.useEffect(() => { setLocal(value); }, [value]);
   return (
-    <View style={[styles.goalInput, flex && { flex: 1 }]}>
-      <Text style={styles.goalLabel}>{label}</Text>
-      <View style={styles.goalInputRow}>
+    <View className="py-1" style={{ gap: 4, ...(flex ? { flex: 1 } : {}) }}>
+      <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+        {label}
+      </Text>
+      <View className="flex-row items-center gap-1">
         <TextInput
           value={local}
           onChangeText={(v) => { setLocal(v); onChangeText?.(v); }}
           onBlur={() => onBlur(local)}
           keyboardType="decimal-pad"
           keyboardAppearance="dark"
-          style={styles.goalInputField}
+          className="flex-1 bg-surface-elevated rounded-lg border border-border text-[15px] font-semibold text-text-primary text-center"
+          style={{ paddingHorizontal: 8, paddingVertical: 4, minHeight: 38 }}
           selectTextOnFocus
           returnKeyType="done"
         />
-        <Text style={styles.goalUnit}>{unit}</Text>
+        <Text className="text-[13px] text-text-muted" style={{ minWidth: 28 }}>{unit}</Text>
       </View>
     </View>
   );
@@ -554,164 +587,20 @@ function NavRow({
   iconColor?: string; label: string; sublabel?: string; onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.navRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.navIconWrap, { backgroundColor: iconColor ? `${iconColor}20` : Colors.surfaceElevated }]}>
+    <TouchableOpacity className="flex-row items-center gap-3 py-1" onPress={onPress} activeOpacity={0.7}>
+      <View
+        className="w-9 h-9 rounded-xl items-center justify-center"
+        style={{ backgroundColor: iconColor ? `${iconColor}20` : Colors.surfaceElevated }}
+      >
         <Ionicons name={icon} size={18} color={iconColor ?? Colors.textSecondary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.navLabel}>{label}</Text>
-        {sublabel ? <Text style={styles.navSublabel}>{sublabel}</Text> : null}
+        <Text className="text-[15px] text-text-primary font-semibold">{label}</Text>
+        {sublabel ? (
+          <Text className="text-[11px] text-text-muted" style={{ marginTop: 2 }}>{sublabel}</Text>
+        ) : null}
       </View>
       <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
     </TouchableOpacity>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, gap: Spacing.sm },
-
-  avatarSection: { alignItems: 'center', paddingVertical: Spacing.lg, gap: Spacing.sm },
-  avatarWrap: { position: 'relative' },
-  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: Colors.surfaceElevated },
-  avatarPlaceholder: {
-    width: 90, height: 90, borderRadius: 45,
-    backgroundColor: Colors.accentMuted, borderWidth: 2, borderColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarInitials: { fontSize: Typography.sizes.xxl, fontWeight: '700', color: Colors.accent },
-  avatarBadge: {
-    position: 'absolute', bottom: 2, right: 2,
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: Colors.background,
-  },
-  nameInput: {
-    fontSize: Typography.sizes.xl, fontWeight: '700', color: Colors.textPrimary,
-    textAlign: 'center', borderBottomWidth: 1.5, borderBottomColor: Colors.border,
-    paddingBottom: 4, minWidth: 180,
-  },
-  avatarHint: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-
-  sectionHeader: {
-    fontSize: Typography.sizes.xs, fontWeight: '700', color: Colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    paddingTop: Spacing.sm, paddingHorizontal: Spacing.xs,
-  },
-  card: { gap: Spacing.sm },
-  row: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: Spacing.xs, gap: Spacing.sm,
-  },
-  col: { gap: Spacing.sm, paddingVertical: Spacing.xs },
-  statsRow: { flexDirection: 'row', gap: Spacing.sm },
-  rowLabel: { fontSize: Typography.sizes.base, color: Colors.textPrimary, fontWeight: '500' },
-
-  segmented: {
-    flexDirection: 'row', backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
-  },
-  segBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, minWidth: 50,
-  },
-  segBtnActive: { backgroundColor: Colors.accent },
-  segBtnText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textSecondary },
-  segBtnTextActive: { color: 'white' },
-
-  bmiRow: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', paddingVertical: Spacing.xs, gap: Spacing.md,
-  },
-  bmiLabel: { fontSize: Typography.sizes.sm, color: Colors.textPrimary, fontWeight: '600' },
-  bmiHint: { fontSize: Typography.sizes.xs, color: Colors.textMuted, marginTop: 2 },
-  bmiChip: {
-    borderRadius: Radius.md, borderWidth: 1,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs,
-    alignItems: 'center', minWidth: 72,
-  },
-  bmiValue: { fontSize: Typography.sizes.lg, fontWeight: '800' },
-  bmiCat: { fontSize: Typography.sizes.xs, fontWeight: '600', marginTop: 1 },
-
-  goalTypeRow: { flexDirection: 'row', gap: Spacing.xs },
-  goalTypeBtn: {
-    flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', gap: 4,
-  },
-  goalTypeBtnActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
-  goalTypeBtnText: { fontSize: Typography.sizes.xs, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center' },
-  goalTypeBtnTextActive: { color: Colors.accentLight },
-
-  activityCol: { gap: Spacing.xs },
-  activityBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md, backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
-  },
-  activityBtnActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
-  activityBtnText: { fontSize: Typography.sizes.base, fontWeight: '600', color: Colors.textSecondary },
-  activityBtnTextActive: { color: Colors.accentLight },
-  activityDesc: { fontSize: Typography.sizes.xs, color: Colors.textMuted, marginTop: 1 },
-
-  tdeeBox: { gap: Spacing.sm, paddingTop: Spacing.xs },
-  tdeeSectionLabel: {
-    fontSize: Typography.sizes.xs, fontWeight: '700', color: Colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  },
-  tdeeStatsRow: {
-    flexDirection: 'row', gap: Spacing.xs,
-    backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, padding: Spacing.md,
-  },
-  tdeeStat: { flex: 1, alignItems: 'center', gap: 1 },
-  tdeeValue: { fontSize: Typography.sizes.md, fontWeight: '800', color: Colors.textPrimary },
-  tdeeUnit: { fontSize: Typography.sizes.xs, color: Colors.textMuted },
-  tdeeLabel: { fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.3 },
-  applyBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: Spacing.xs, backgroundColor: Colors.accent, borderRadius: Radius.md, paddingVertical: Spacing.sm,
-  },
-  applyBtnText: { color: 'white', fontWeight: '700', fontSize: Typography.sizes.sm },
-  tdeePrompt: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    gap: Spacing.xs, paddingTop: Spacing.xs, opacity: 0.7,
-  },
-  tdeePromptText: { flex: 1, fontSize: Typography.sizes.sm, color: Colors.textMuted, lineHeight: 18 },
-
-  macroRow: { flexDirection: 'row', gap: Spacing.sm },
-  goalInput: { gap: 4, paddingVertical: Spacing.xs },
-  goalLabel: {
-    fontSize: Typography.sizes.xs, color: Colors.textMuted,
-    fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5,
-  },
-  goalInputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  goalInputField: {
-    flex: 1, backgroundColor: Colors.surfaceElevated, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.border, paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs, fontSize: Typography.sizes.base, fontWeight: '600',
-    color: Colors.textPrimary, minHeight: 38, textAlign: 'center',
-  },
-  goalUnit: { fontSize: Typography.sizes.sm, color: Colors.textMuted, minWidth: 28 },
-
-  restRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-  restBtn: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border,
-    minWidth: 46, alignItems: 'center',
-  },
-  restBtnActive: { backgroundColor: Colors.accentMuted, borderColor: Colors.accent },
-  restBtnText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.textSecondary },
-  restBtnTextActive: { color: Colors.accentLight },
-
-  navRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xs },
-  navIconWrap: { width: 36, height: 36, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  navLabel: { fontSize: Typography.sizes.base, color: Colors.textPrimary, fontWeight: '600' },
-  navSublabel: { fontSize: Typography.sizes.xs, color: Colors.textMuted, marginTop: 2 },
-
-  aboutRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  aboutAppName: { fontSize: Typography.sizes.md, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -0.5 },
-  aboutVersion: { fontSize: Typography.sizes.xs, color: Colors.textMuted, marginTop: 2 },
-});

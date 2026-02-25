@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { View, Text, ViewStyle } from 'react-native';
 
 type BadgeVariant = 'accent' | 'success' | 'warning' | 'danger' | 'neutral';
 
@@ -10,39 +9,31 @@ interface BadgeProps {
   style?: ViewStyle;
 }
 
+const VARIANT_BG: Record<BadgeVariant, string> = {
+  accent: 'bg-accent/18',
+  success: 'bg-success/15',
+  warning: 'bg-warning/15',
+  danger: 'bg-danger/15',
+  neutral: 'bg-surface-elevated',
+};
+
+const VARIANT_TEXT: Record<BadgeVariant, string> = {
+  accent: 'text-accent-light',
+  success: 'text-success',
+  warning: 'text-warning',
+  danger: 'text-danger',
+  neutral: 'text-text-secondary',
+};
+
 export function Badge({ label, variant = 'neutral', style }: BadgeProps) {
   return (
-    <View style={[styles.base, styles[variant], style]}>
-      <Text style={[styles.text, styles[`${variant}Text`]]}>{label}</Text>
+    <View
+      className={`px-2 rounded-full self-start ${VARIANT_BG[variant]}`}
+      style={[{ paddingVertical: 3 }, style]}
+    >
+      <Text className={`text-[11px] font-semibold tracking-[0.3px] ${VARIANT_TEXT[variant]}`}>
+        {label}
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    alignSelf: 'flex-start',
-  },
-  text: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-
-  accent: { backgroundColor: Colors.accentMuted },
-  accentText: { color: Colors.accentLight },
-
-  success: { backgroundColor: Colors.successMuted },
-  successText: { color: Colors.success },
-
-  warning: { backgroundColor: Colors.warningMuted },
-  warningText: { color: Colors.warning },
-
-  danger: { backgroundColor: Colors.dangerMuted },
-  dangerText: { color: Colors.danger },
-
-  neutral: { backgroundColor: Colors.surfaceElevated },
-  neutralText: { color: Colors.textSecondary },
-});

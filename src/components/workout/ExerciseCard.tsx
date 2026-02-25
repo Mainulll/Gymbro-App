@@ -3,14 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Modal,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 import { ActiveExercise, ExerciseVideo } from '../../types';
 import { SetRow } from './SetRow';
 import { useWorkoutStore } from '../../store/workoutStore';
@@ -70,12 +69,22 @@ export function ExerciseCard({
   }
 
   return (
-    <View style={styles.card}>
+    <View
+      className="bg-surface-elevated rounded-2xl border overflow-hidden mb-3"
+      style={{
+        borderColor: 'rgba(255,255,255,0.08)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.exerciseName}>{exercise.template.name}</Text>
-          <Text style={styles.muscleLabel}>{muscleLabel}</Text>
+      <View className="flex-row items-start justify-between p-4 pb-2">
+        <View className="flex-1" style={{ gap: 2 }}>
+          <Text className="text-[17px] font-bold text-text-primary">{exercise.template.name}</Text>
+          <Text className="text-[13px] text-accent font-medium">{muscleLabel}</Text>
         </View>
         <TouchableOpacity
           onPress={() => setShowOptions((v) => !v)}
@@ -87,9 +96,9 @@ export function ExerciseCard({
 
       {/* Options dropdown */}
       {showOptions && (
-        <View style={styles.optionsMenu}>
+        <View className="bg-surface-elevated border-t border-b border-border py-1">
           <TouchableOpacity
-            style={styles.optionItem}
+            className="flex-row items-center gap-2 px-4 py-2"
             onPress={() => {
               setShowOptions(false);
               router.push({
@@ -102,28 +111,51 @@ export function ExerciseCard({
             }}
           >
             <Ionicons name="videocam-outline" size={16} color={Colors.textSecondary} />
-            <Text style={styles.optionText}>Record Video</Text>
+            <Text className="text-[15px] text-text-secondary">Record Video</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.optionItem, styles.optionDanger]}
+            className="flex-row items-center gap-2 px-4 py-2"
             onPress={() => {
               setShowOptions(false);
               removeExercise(exercise.workoutExerciseId);
             }}
           >
             <Ionicons name="trash-outline" size={16} color={Colors.danger} />
-            <Text style={[styles.optionText, styles.optionDangerText]}>Remove Exercise</Text>
+            <Text className="text-[15px] text-danger">Remove Exercise</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Column headers */}
-      <View style={styles.columnHeaders}>
-        <Text style={[styles.colHeader, { width: 32 }]}>Set</Text>
-        <Text style={[styles.colHeader, { flex: 1, textAlign: 'center' }]}>Previous</Text>
-        <Text style={[styles.colHeader, { flex: 1, textAlign: 'center' }]}>Weight</Text>
-        <Text style={[styles.colHeader, { flex: 1, textAlign: 'center' }]}>Reps</Text>
-        <Text style={[styles.colHeader, { width: 40, textAlign: 'center' }]}></Text>
+      <View className="flex-row items-center px-4 pb-1 gap-1">
+        <Text
+          className="text-[11px] font-semibold text-text-muted uppercase"
+          style={{ letterSpacing: 0.5, width: 32 }}
+        >
+          Set
+        </Text>
+        <Text
+          className="text-[11px] font-semibold text-text-muted uppercase text-center flex-1"
+          style={{ letterSpacing: 0.5 }}
+        >
+          Previous
+        </Text>
+        <Text
+          className="text-[11px] font-semibold text-text-muted uppercase text-center flex-1"
+          style={{ letterSpacing: 0.5 }}
+        >
+          Weight
+        </Text>
+        <Text
+          className="text-[11px] font-semibold text-text-muted uppercase text-center flex-1"
+          style={{ letterSpacing: 0.5 }}
+        >
+          Reps
+        </Text>
+        <Text
+          className="text-[11px] font-semibold text-text-muted uppercase text-center"
+          style={{ letterSpacing: 0.5, width: 40 }}
+        />
       </View>
 
       {/* Sets — each one may have an attached video */}
@@ -131,7 +163,7 @@ export function ExerciseCard({
         const setVideos = videosBySet.get(set.id) ?? [];
         return (
           <View key={set.id}>
-            <View style={styles.setRowWrapper}>
+            <View className="flex-row items-center pr-2">
               <View style={{ flex: 1 }}>
                 <SetRow
                   set={set}
@@ -153,7 +185,8 @@ export function ExerciseCard({
               </View>
               {/* Per-set camera icon */}
               <TouchableOpacity
-                style={styles.setVideoBtn}
+                className="items-center justify-center py-2"
+                style={{ width: 28 }}
                 onPress={() => openCameraForSet(set.id)}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
               >
@@ -167,17 +200,18 @@ export function ExerciseCard({
 
             {/* Inline video thumbnails for this set */}
             {setVideos.length > 0 && (
-              <View style={styles.setVideosRow}>
+              <View className="flex-row flex-wrap gap-1 px-4 pb-1">
                 {setVideos.map((v) => (
                   <TouchableOpacity
                     key={v.id}
-                    style={styles.setVideoThumb}
+                    className="rounded-lg overflow-hidden bg-surface-elevated items-center justify-center border border-border"
+                    style={{ width: 56, height: 56, gap: 2 }}
                     onPress={() => setPlayingVideo(v)}
                   >
-                    <View style={styles.thumbPlaceholder}>
+                    <View className="items-center justify-center">
                       <Ionicons name="play-circle" size={22} color={Colors.accent} />
                     </View>
-                    <Text style={styles.thumbDuration}>{Math.round(v.durationSeconds)}s</Text>
+                    <Text className="text-[9px] text-text-muted">{Math.round(v.durationSeconds)}s</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -188,28 +222,35 @@ export function ExerciseCard({
 
       {/* Add Set */}
       <TouchableOpacity
-        style={styles.addSetBtn}
+        className="flex-row items-center justify-center gap-1 rounded-xl border border-dashed"
+        style={{
+          margin: 16, marginTop: 8, paddingVertical: 8,
+          backgroundColor: Colors.accentMuted, borderColor: Colors.accentMuted,
+        }}
         onPress={() => addSet(exercise.workoutExerciseId)}
       >
         <Ionicons name="add" size={16} color={Colors.accent} />
-        <Text style={styles.addSetText}>Add Set</Text>
+        <Text className="text-[13px] font-semibold text-accent">Add Set</Text>
       </TouchableOpacity>
 
       {/* Unlinked exercise-level videos */}
       {unlinkedVideos.length > 0 && (
-        <View style={styles.unlinkedVideos}>
-          <Text style={styles.unlinkedLabel}>Exercise Videos</Text>
-          <View style={styles.videoRow}>
+        <View className="px-4 pb-2 gap-1">
+          <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+            Exercise Videos
+          </Text>
+          <View className="flex-row flex-wrap gap-1">
             {unlinkedVideos.map((v) => (
               <TouchableOpacity
                 key={v.id}
-                style={styles.setVideoThumb}
+                className="rounded-lg overflow-hidden bg-surface-elevated items-center justify-center border border-border"
+                style={{ width: 56, height: 56, gap: 2 }}
                 onPress={() => setPlayingVideo(v)}
               >
-                <View style={styles.thumbPlaceholder}>
+                <View className="items-center justify-center">
                   <Ionicons name="play-circle" size={22} color={Colors.accent} />
                 </View>
-                <Text style={styles.thumbDuration}>{Math.round(v.durationSeconds)}s</Text>
+                <Text className="text-[9px] text-text-muted">{Math.round(v.durationSeconds)}s</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -218,10 +259,7 @@ export function ExerciseCard({
 
       {/* Video player modal */}
       {playingVideo && (
-        <VideoPlayerModal
-          video={playingVideo}
-          onClose={() => setPlayingVideo(null)}
-        />
+        <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
       )}
     </View>
   );
@@ -229,35 +267,30 @@ export function ExerciseCard({
 
 // ─── Video Player Modal ───────────────────────────────────────────────────────
 
-function VideoPlayerModal({
-  video,
-  onClose,
-}: {
-  video: ExerciseVideo;
-  onClose: () => void;
-}) {
+function VideoPlayerModal({ video, onClose }: { video: ExerciseVideo; onClose: () => void }) {
   const player = useVideoPlayer(video.localUri, (p) => {
     p.loop = false;
     p.play();
   });
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={modalStyles.overlay}>
-        <TouchableOpacity style={modalStyles.backdrop} onPress={onClose} activeOpacity={1} />
-        <View style={modalStyles.container}>
-          <VideoView
-            player={player}
-            style={modalStyles.video}
-            contentFit="contain"
-            nativeControls
-          />
-          <TouchableOpacity style={modalStyles.closeBtn} onPress={onClose}>
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
+      >
+        <TouchableOpacity className="absolute inset-0" onPress={onClose} activeOpacity={1} />
+        <View
+          style={{
+            width: SCREEN_W - 32,
+            aspectRatio: 9 / 16,
+            borderRadius: 16,
+            overflow: 'hidden',
+            backgroundColor: '#000',
+          }}
+        >
+          <VideoView player={player} className="flex-1" contentFit="contain" nativeControls />
+          <TouchableOpacity className="absolute" style={{ top: 12, right: 12 }} onPress={onClose}>
             <Ionicons name="close-circle" size={32} color="white" />
           </TouchableOpacity>
         </View>
@@ -265,172 +298,3 @@ function VideoPlayerModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    marginBottom: Spacing.md,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    padding: Spacing.base,
-    paddingBottom: Spacing.sm,
-  },
-  headerLeft: { flex: 1, gap: 2 },
-  exerciseName: {
-    fontSize: Typography.sizes.md,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  muscleLabel: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.accent,
-    fontWeight: '500',
-  },
-  optionsMenu: {
-    backgroundColor: Colors.surfaceElevated,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: Spacing.xs,
-  },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-  },
-  optionDanger: {},
-  optionText: {
-    fontSize: Typography.sizes.base,
-    color: Colors.textSecondary,
-  },
-  optionDangerText: { color: Colors.danger },
-  columnHeaders: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xs,
-    gap: Spacing.xs,
-  },
-  colHeader: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  setRowWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: Spacing.sm,
-  },
-  setVideoBtn: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  setVideosRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xs,
-  },
-  setVideoThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-    backgroundColor: Colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  thumbPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbDuration: {
-    fontSize: 9,
-    color: Colors.textMuted,
-  },
-  addSetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    margin: Spacing.base,
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accentMuted,
-    borderWidth: 1,
-    borderColor: Colors.accentMuted,
-    borderStyle: 'dashed',
-  },
-  addSetText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  unlinkedVideos: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.xs,
-  },
-  unlinkedLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  videoRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-});
-
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  container: {
-    width: SCREEN_W - Spacing.base * 2,
-    aspectRatio: 9 / 16,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-  },
-  video: {
-    flex: 1,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: Spacing.md,
-    right: Spacing.md,
-  },
-});

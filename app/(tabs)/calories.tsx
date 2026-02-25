@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -20,7 +19,7 @@ import { ProgressRing } from '../../src/components/ui/ProgressRing';
 import { ProgressBar } from '../../src/components/ui/ProgressBar';
 import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { Card } from '../../src/components/ui/Card';
-import { Colors, Typography, Spacing, Radius, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
+import { Colors, SCROLL_BOTTOM_PADDING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatDateISO } from '../../src/utils/date';
 import { consumePendingCaloriePrefill } from '../../src/utils/caloriePrefill';
@@ -249,23 +248,10 @@ export default function CaloriesScreen() {
       mealType: 'snack',
       foodName: name,
       calories: kcal,
-      proteinG: 0,
-      carbsG: 0,
-      fatG: 0,
-      fiberG: 0,
-      sugarG: 0,
-      sodiumMg: 0,
-      saturatedFatG: 0,
-      vitaminDMcg: null,
-      vitaminB12Mcg: null,
-      vitaminCMg: null,
-      ironMg: null,
-      calciumMg: null,
-      magnesiumMg: null,
-      potassiumMg: null,
-      zincMg: null,
-      servingSize: 1,
-      servingUnit: 'serving',
+      proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0, sodiumMg: 0, saturatedFatG: 0,
+      vitaminDMcg: null, vitaminB12Mcg: null, vitaminCMg: null,
+      ironMg: null, calciumMg: null, magnesiumMg: null, potassiumMg: null, zincMg: null,
+      servingSize: 1, servingUnit: 'serving',
     });
   }
 
@@ -293,19 +279,16 @@ export default function CaloriesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
           {/* Header with date nav */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
+          <View className="flex-row items-center justify-between">
+            <TouchableOpacity onPress={goToPrevDay} className="w-10 h-10 items-center justify-center">
               <Ionicons name="chevron-back" size={22} color={Colors.textSecondary} />
             </TouchableOpacity>
-            <Text style={styles.dateLabel}>{dateLabel}</Text>
-            <TouchableOpacity onPress={goToNextDay} style={styles.navBtn} disabled={isToday}>
+            <Text className="text-[24px] font-bold text-text-primary">{dateLabel}</Text>
+            <TouchableOpacity onPress={goToNextDay} className="w-10 h-10 items-center justify-center" disabled={isToday}>
               <Ionicons
                 name="chevron-forward"
                 size={22}
@@ -315,62 +298,52 @@ export default function CaloriesScreen() {
           </View>
 
           {/* Daily summary */}
-          <Card glass style={styles.summaryCard}>
-            <View style={styles.summaryTop}>
-              <ProgressRing
-                size={110}
-                strokeWidth={10}
-                progress={calorieProgress}
-                color={Colors.pink}
-              >
-                <View style={styles.ringCenter}>
-                  <Text style={styles.ringValue}>{Math.round(summary.totalCalories)}</Text>
-                  <Text style={styles.ringLabel}>kcal</Text>
+          <Card glass style={{ gap: 16 }}>
+            <View className="flex-row items-center gap-4">
+              <ProgressRing size={110} strokeWidth={10} progress={calorieProgress} color={Colors.pink}>
+                <View className="items-center">
+                  <Text className="text-[20px] font-bold text-text-primary">{Math.round(summary.totalCalories)}</Text>
+                  <Text className="text-[11px] text-text-secondary">kcal</Text>
                 </View>
               </ProgressRing>
-
-              <View style={styles.summaryRight}>
+              <View className="flex-1 gap-2">
                 <SummaryRow label="Goal" value={`${settings.dailyCalorieGoal} kcal`} />
                 <SummaryRow label="Consumed" value={`${Math.round(summary.totalCalories)} kcal`} />
-                <SummaryRow
-                  label="Remaining"
-                  value={`${remaining} kcal`}
-                  highlight={remaining > 0}
-                />
+                <SummaryRow label="Remaining" value={`${remaining} kcal`} highlight={remaining > 0} />
               </View>
             </View>
 
             {/* Macro bars */}
-            <View style={styles.macros}>
+            <View className="gap-2">
               <ProgressBar
                 progress={summary.totalProteinG / settings.dailyProteinGoal}
                 color={Colors.protein}
                 label="Protein"
                 valueLabel={`${Math.round(summary.totalProteinG)}g / ${settings.dailyProteinGoal}g`}
-                style={styles.macroBar}
               />
               <ProgressBar
                 progress={summary.totalCarbsG / settings.dailyCarbsGoal}
                 color={Colors.carbs}
                 label="Carbs"
                 valueLabel={`${Math.round(summary.totalCarbsG)}g / ${settings.dailyCarbsGoal}g`}
-                style={styles.macroBar}
               />
               <ProgressBar
                 progress={summary.totalFatG / settings.dailyFatGoal}
                 color={Colors.fat}
                 label="Fat"
                 valueLabel={`${Math.round(summary.totalFatG)}g / ${settings.dailyFatGoal}g`}
-                style={styles.macroBar}
               />
             </View>
             {/* Micros CTA */}
             <TouchableOpacity
-              style={styles.microsCta}
+              className="flex-row items-center justify-center gap-1 py-2 px-3 rounded-xl border"
+              style={{ backgroundColor: Colors.tealMuted, borderColor: 'rgba(0,217,192,0.25)' }}
               onPress={() => router.push('/calories/micros')}
             >
               <Ionicons name="leaf-outline" size={14} color={Colors.teal} />
-              <Text style={styles.microsCtaText}>View Micronutrient Breakdown</Text>
+              <Text className="text-[13px] font-semibold text-teal flex-1 text-center">
+                View Micronutrient Breakdown
+              </Text>
               <Ionicons name="chevron-forward" size={13} color={Colors.teal} />
             </TouchableOpacity>
           </Card>
@@ -381,25 +354,29 @@ export default function CaloriesScreen() {
             const fastProgress = targetMs ? Math.min(1, elapsedMs / targetMs) : null;
             const remainingMs = targetMs ? Math.max(0, targetMs - elapsedMs) : null;
             return (
-              <Card style={styles.fastingCard}>
-                <View style={styles.fastingHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+              <Card style={{ gap: 8 }}>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1">
                     <Text style={{ fontSize: 16 }}>⏱</Text>
-                    <Text style={styles.fastingTitle}>Intermittent Fasting</Text>
+                    <Text className="text-[15px] font-bold text-text-primary">Intermittent Fasting</Text>
                   </View>
                   {fastingState.isActive && (
-                    <TouchableOpacity style={styles.endFastBtn} onPress={handleEndFast}>
-                      <Text style={styles.endFastText}>End Fast</Text>
+                    <TouchableOpacity
+                      className="px-3 rounded-xl"
+                      style={{ paddingVertical: 4, backgroundColor: 'rgba(255,99,132,0.15)', borderWidth: 1, borderColor: 'rgba(255,99,132,0.4)' }}
+                      onPress={handleEndFast}
+                    >
+                      <Text className="text-[13px] font-bold text-coral">End Fast</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
                 {fastingState.isActive ? (
-                  <View style={{ gap: Spacing.sm }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs }}>
-                      <Text style={styles.fastingElapsed}>{formatElapsed(elapsedMs)}</Text>
+                  <View style={{ gap: 8 }}>
+                    <View className="flex-row items-baseline gap-1">
+                      <Text className="text-[28px] font-extrabold text-teal">{formatElapsed(elapsedMs)}</Text>
                       {fastingState.targetHours && (
-                        <Text style={styles.fastingTarget}>/ {fastingState.targetHours}h 0m</Text>
+                        <Text className="text-[15px] text-text-muted">/ {fastingState.targetHours}h 0m</Text>
                       )}
                     </View>
                     {fastProgress !== null && (
@@ -411,33 +388,35 @@ export default function CaloriesScreen() {
                       />
                     )}
                     {!fastingState.targetHours && (
-                      <Text style={styles.fastingNoTarget}>No target set — fast until ready</Text>
+                      <Text className="text-[11px] text-text-muted italic">No target set — fast until ready</Text>
                     )}
                   </View>
                 ) : (
-                  <View style={{ gap: Spacing.sm }}>
-                    <Text style={styles.fastingHint}>Start a fast to track your fasting window</Text>
-                    <View style={styles.fastingPresets}>
+                  <View style={{ gap: 8 }}>
+                    <Text className="text-[13px] text-text-muted">Start a fast to track your fasting window</Text>
+                    <View className="flex-row gap-1">
                       {([16, 18, 20] as const).map((h) => (
                         <TouchableOpacity
                           key={h}
-                          style={styles.fastingPresetChip}
+                          className="flex-1 py-2 rounded-xl bg-surface-elevated border border-border items-center"
                           onPress={() => handleStartFast(h)}
                         >
-                          <Text style={styles.fastingPresetText}>{h}:8</Text>
+                          <Text className="text-[13px] font-semibold text-teal">{h}:8</Text>
                         </TouchableOpacity>
                       ))}
                       <TouchableOpacity
-                        style={styles.fastingPresetChip}
+                        className="flex-1 py-2 rounded-xl bg-surface-elevated border border-border items-center"
                         onPress={() => setShowCustomFast((v) => !v)}
                       >
-                        <Text style={styles.fastingPresetText}>Custom</Text>
+                        <Text className="text-[13px] font-semibold text-teal">Custom</Text>
                       </TouchableOpacity>
                     </View>
                     {showCustomFast && (
-                      <View style={[styles.formRow, { alignItems: 'flex-end' }]}>
-                        <View style={[styles.formInputWrapper, { flex: 1 }]}>
-                          <Text style={styles.formLabel}>Fasting hours</Text>
+                      <View className="flex-row gap-2 items-end">
+                        <View className="gap-1 flex-1">
+                          <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+                            Fasting hours
+                          </Text>
                           <TextInput
                             value={customFastHours}
                             onChangeText={setCustomFastHours}
@@ -445,17 +424,17 @@ export default function CaloriesScreen() {
                             placeholderTextColor={Colors.textMuted}
                             keyboardType="number-pad"
                             keyboardAppearance="dark"
-                            style={styles.formInput}
+                            className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
                           />
                         </View>
                         <TouchableOpacity
-                          style={[styles.logBtn, { flex: 1, marginTop: 0 }]}
+                          className="bg-accent rounded-xl py-3 items-center flex-1"
                           onPress={() => {
                             const h = parseInt(customFastHours, 10);
                             if (h > 0 && h <= 168) handleStartFast(h);
                           }}
                         >
-                          <Text style={styles.logBtnText}>Start Fast</Text>
+                          <Text className="text-[15px] font-bold text-text-primary">Start Fast</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -470,60 +449,64 @@ export default function CaloriesScreen() {
             const mealEntries = entries.filter((e) => e.mealType === meal);
             const mealCals = mealEntries.reduce((sum, e) => sum + e.calories, 0);
             return (
-              <Card key={meal} style={styles.mealCard} accent={MEAL_COLORS[meal]}>
-                <View style={styles.mealHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+              <Card key={meal} style={{ gap: 8 }} accent={MEAL_COLORS[meal]}>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1">
                     <Text style={{ fontSize: 16 }}>{MEAL_ICONS[meal]}</Text>
-                    <Text style={[styles.mealTitle, { color: MEAL_COLORS[meal] }]}>{MEAL_LABELS[meal]}</Text>
+                    <Text className="text-[15px] font-bold" style={{ color: MEAL_COLORS[meal] }}>
+                      {MEAL_LABELS[meal]}
+                    </Text>
                   </View>
-                  <View style={styles.mealHeaderRight}>
+                  <View className="flex-row items-center gap-1">
                     {mealCals > 0 && (
-                      <Text style={styles.mealCals}>{Math.round(mealCals)} kcal</Text>
+                      <Text className="text-[13px] text-text-secondary">{Math.round(mealCals)} kcal</Text>
                     )}
                     {/* Food search button */}
                     <TouchableOpacity
-                      style={styles.barcodeBtn}
+                      className="w-8 h-8 items-center justify-center rounded-lg bg-surface-elevated"
                       onPress={() => openFoodSearch(meal)}
                     >
                       <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
                     </TouchableOpacity>
                     {/* Barcode scan button */}
                     <TouchableOpacity
-                      style={styles.barcodeBtn}
+                      className="w-8 h-8 items-center justify-center rounded-lg bg-surface-elevated"
                       onPress={() => openBarcode(meal)}
                     >
                       <Ionicons name="barcode-outline" size={16} color={Colors.textSecondary} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.addMealBtn}
+                      className="flex-row items-center px-2 rounded-lg bg-accent/15"
+                      style={{ gap: 2, paddingVertical: 4 }}
                       onPress={() => openAdd(meal)}
                     >
                       <Ionicons name="add" size={16} color={Colors.accent} />
-                      <Text style={styles.addMealText}>Add</Text>
+                      <Text className="text-[13px] font-semibold text-accent">Add</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 {mealEntries.length === 0 ? (
-                  <Text style={styles.emptyMeal}>Nothing logged yet</Text>
+                  <Text className="text-[13px] text-text-muted text-center py-2">Nothing logged yet</Text>
                 ) : (
                   mealEntries.map((entry) => (
                     <TouchableOpacity
                       key={entry.id}
-                      style={styles.entryRow}
+                      className="flex-row items-center justify-between gap-2 py-1"
+                      style={{ borderTopWidth: 0.5, borderTopColor: Colors.border }}
                       onLongPress={() => handleDeleteEntry(entry)}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.entryName} numberOfLines={1}>
+                        <Text className="flex-1 text-[15px] text-text-primary" numberOfLines={1}>
                           {entry.foodName}
                         </Text>
                         {(entry.proteinG > 0 || entry.carbsG > 0 || entry.fatG > 0) && (
-                          <Text style={styles.entryMacros}>
+                          <Text className="text-[11px] text-text-muted" style={{ marginTop: 1 }}>
                             P {Math.round(entry.proteinG)}g · C {Math.round(entry.carbsG)}g · F {Math.round(entry.fatG)}g
                           </Text>
                         )}
                         {(entry.fiberG > 0 || entry.sugarG > 0 || entry.sodiumMg > 0) && (
-                          <Text style={styles.entryMicros}>
+                          <Text className="text-[11px] text-text-muted" style={{ marginTop: 1, opacity: 0.7 }}>
                             {entry.fiberG > 0 ? `Fiber ${Math.round(entry.fiberG)}g` : ''}
                             {entry.fiberG > 0 && entry.sugarG > 0 ? ' · ' : ''}
                             {entry.sugarG > 0 ? `Sugar ${Math.round(entry.sugarG)}g` : ''}
@@ -532,7 +515,9 @@ export default function CaloriesScreen() {
                           </Text>
                         )}
                       </View>
-                      <Text style={styles.entryCals}>{Math.round(entry.calories)} kcal</Text>
+                      <Text className="text-[13px] text-text-secondary font-medium">
+                        {Math.round(entry.calories)} kcal
+                      </Text>
                     </TouchableOpacity>
                   ))
                 )}
@@ -541,29 +526,31 @@ export default function CaloriesScreen() {
           })}
 
           {/* Alcohol tracker card */}
-          <Card style={styles.mealCard} accent={Colors.mint}>
-            <View style={styles.mealHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+          <Card style={{ gap: 8 }} accent={Colors.mint}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1">
                 <Text style={{ fontSize: 16 }}>🍻</Text>
-                <Text style={[styles.mealTitle, { color: Colors.mint }]}>Alcohol</Text>
+                <Text className="text-[15px] font-bold" style={{ color: Colors.mint }}>Alcohol</Text>
               </View>
               <TouchableOpacity
-                style={styles.addMealBtn}
+                className="flex-row items-center px-2 rounded-lg bg-accent/15"
+                style={{ gap: 2, paddingVertical: 4 }}
                 onPress={() => setShowAlcoholSheet(true)}
               >
                 <Ionicons name="add" size={16} color={Colors.accent} />
-                <Text style={styles.addMealText}>Track</Text>
+                <Text className="text-[13px] font-semibold text-accent">Track</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.quickDrinksRow}>
+            <View className="flex-row flex-wrap gap-1 mt-1">
               {QUICK_DRINKS.map((d) => (
                 <TouchableOpacity
                   key={d.name}
-                  style={styles.quickDrinkChip}
+                  className="bg-surface-elevated rounded-xl border items-center"
+                  style={{ flex: 1, minWidth: '45%', paddingHorizontal: 8, paddingVertical: 8, gap: 2, borderColor: 'rgba(78,203,113,0.25)' }}
                   onPress={() => handleQuickDrink(d)}
                 >
-                  <Text style={styles.quickDrinkLabel}>{d.label}</Text>
-                  <Text style={styles.quickDrinkSub}>{d.kcal} kcal</Text>
+                  <Text className="text-[13px] font-semibold text-text-primary">{d.label}</Text>
+                  <Text className="text-[11px] text-text-muted">{d.kcal} kcal</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -580,14 +567,14 @@ export default function CaloriesScreen() {
         title={`Add to ${MEAL_LABELS[addMeal]}`}
         snapHeight={920}
       >
-        <View style={styles.addForm}>
+        <View className="gap-3">
           {/* Barcode scan shortcut inside sheet */}
           <TouchableOpacity
-            style={styles.barcodeSheetBtn}
+            className="flex-row items-center justify-center gap-1 py-2 rounded-xl bg-surface-elevated border border-border"
             onPress={() => { setShowAddSheet(false); openBarcode(addMeal); }}
           >
             <Ionicons name="barcode-outline" size={18} color={Colors.accent} />
-            <Text style={styles.barcodeSheetText}>Scan Barcode</Text>
+            <Text className="text-[13px] font-semibold text-accent">Scan Barcode</Text>
           </TouchableOpacity>
 
           <TextInput
@@ -595,12 +582,14 @@ export default function CaloriesScreen() {
             onChangeText={setFoodName}
             placeholder="Food name"
             placeholderTextColor={Colors.textMuted}
-            style={styles.formInput}
+            className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
             keyboardAppearance="dark"
           />
-          <View style={styles.formRow}>
-            <View style={[styles.formInputWrapper, { flex: 2 }]}>
-              <Text style={styles.formLabel}>Calories</Text>
+          <View className="flex-row gap-2">
+            <View className="gap-1" style={{ flex: 2 }}>
+              <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+                Calories
+              </Text>
               <TextInput
                 value={calories}
                 onChangeText={setCalories}
@@ -608,11 +597,11 @@ export default function CaloriesScreen() {
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="decimal-pad"
                 keyboardAppearance="dark"
-                style={styles.formInput}
+                className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
               />
             </View>
           </View>
-          <View style={styles.formRow}>
+          <View className="flex-row gap-2">
             <MacroInput label="Protein (g)" value={protein} onChange={setProtein} />
             <MacroInput label="Carbs (g)" value={carbs} onChange={setCarbs} />
             <MacroInput label="Fat (g)" value={fat} onChange={setFat} />
@@ -620,10 +609,12 @@ export default function CaloriesScreen() {
 
           {/* Micronutrients toggle */}
           <TouchableOpacity
-            style={styles.microsToggle}
+            className="flex-row items-center justify-between py-1 px-2 rounded-lg bg-surface-elevated border border-border"
             onPress={() => setShowMicros((v) => !v)}
           >
-            <Text style={styles.microsToggleText}>Micronutrients (optional)</Text>
+            <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+              Micronutrients (optional)
+            </Text>
             <Ionicons
               name={showMicros ? 'chevron-up' : 'chevron-down'}
               size={14}
@@ -633,36 +624,38 @@ export default function CaloriesScreen() {
 
           {showMicros && (
             <>
-              <View style={styles.formRow}>
+              <View className="flex-row gap-2">
                 <MacroInput label="Fiber (g)" value={fiber} onChange={setFiber} />
                 <MacroInput label="Sugar (g)" value={sugar} onChange={setSugar} />
               </View>
-              <View style={styles.formRow}>
+              <View className="flex-row gap-2">
                 <MacroInput label="Sodium (mg)" value={sodium} onChange={setSodium} />
                 <MacroInput label="Sat. Fat (g)" value={saturatedFat} onChange={setSaturatedFat} />
               </View>
-              <Text style={styles.vitaminSectionLabel}>Vitamins & Minerals</Text>
-              <View style={styles.formRow}>
+              <Text className="text-[11px] font-bold text-teal uppercase" style={{ letterSpacing: 0.6, marginTop: 4 }}>
+                Vitamins & Minerals
+              </Text>
+              <View className="flex-row gap-2">
                 <MacroInput label="Vit D (mcg)" value={vitaminD} onChange={setVitaminD} />
                 <MacroInput label="Vit B12 (mcg)" value={vitaminB12} onChange={setVitaminB12} />
               </View>
-              <View style={styles.formRow}>
+              <View className="flex-row gap-2">
                 <MacroInput label="Vit C (mg)" value={vitaminC} onChange={setVitaminC} />
                 <MacroInput label="Iron (mg)" value={iron} onChange={setIron} />
               </View>
-              <View style={styles.formRow}>
+              <View className="flex-row gap-2">
                 <MacroInput label="Calcium (mg)" value={calcium} onChange={setCalcium} />
                 <MacroInput label="Magnesium (mg)" value={magnesium} onChange={setMagnesium} />
               </View>
-              <View style={styles.formRow}>
+              <View className="flex-row gap-2">
                 <MacroInput label="Potassium (mg)" value={potassium} onChange={setPotassium} />
                 <MacroInput label="Zinc (mg)" value={zinc} onChange={setZinc} />
               </View>
             </>
           )}
 
-          <TouchableOpacity style={styles.logBtn} onPress={handleAddEntry}>
-            <Text style={styles.logBtnText}>Log Food</Text>
+          <TouchableOpacity className="bg-accent rounded-xl py-3 items-center mt-2" onPress={handleAddEntry}>
+            <Text className="text-[15px] font-bold text-text-primary">Log Food</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -674,22 +667,22 @@ export default function CaloriesScreen() {
         title="Track Alcohol"
         snapHeight={480}
       >
-        <View style={styles.addForm}>
+        <View className="gap-3">
           {/* Tab switcher */}
-          <View style={styles.alcoholTabs}>
+          <View className="flex-row bg-surface-elevated rounded-xl" style={{ padding: 3, gap: 3 }}>
             <TouchableOpacity
-              style={[styles.alcoholTab, alcoholTab === 'quick' && styles.alcoholTabActive]}
+              className={`flex-1 py-2 items-center rounded-lg ${alcoholTab === 'quick' ? 'bg-accent' : ''}`}
               onPress={() => setAlcoholTab('quick')}
             >
-              <Text style={[styles.alcoholTabText, alcoholTab === 'quick' && styles.alcoholTabTextActive]}>
+              <Text className={`text-[13px] font-semibold ${alcoholTab === 'quick' ? 'text-text-primary' : 'text-text-secondary'}`}>
                 Quick Add
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.alcoholTab, alcoholTab === 'custom' && styles.alcoholTabActive]}
+              className={`flex-1 py-2 items-center rounded-lg ${alcoholTab === 'custom' ? 'bg-accent' : ''}`}
               onPress={() => setAlcoholTab('custom')}
             >
-              <Text style={[styles.alcoholTabText, alcoholTab === 'custom' && styles.alcoholTabTextActive]}>
+              <Text className={`text-[13px] font-semibold ${alcoholTab === 'custom' ? 'text-text-primary' : 'text-text-secondary'}`}>
                 Custom
               </Text>
             </TouchableOpacity>
@@ -697,24 +690,29 @@ export default function CaloriesScreen() {
 
           {alcoholTab === 'quick' ? (
             <>
-              <Text style={styles.alcoholHint}>Tap any drink to log it, or enter number of standard drinks (AU std = 70 kcal)</Text>
+              <Text className="text-[11px] text-text-muted text-center">
+                Tap any drink to log it, or enter number of standard drinks (AU std = 70 kcal)
+              </Text>
               {QUICK_DRINKS.map((d) => (
                 <TouchableOpacity
                   key={d.name}
-                  style={styles.drinkRow}
+                  className="flex-row items-center gap-2 py-2"
+                  style={{ borderBottomWidth: 0.5, borderBottomColor: Colors.border }}
                   onPress={async () => { await handleQuickDrink(d); setShowAlcoholSheet(false); }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.drinkRowLabel}>{d.label}</Text>
-                    <Text style={styles.drinkRowSub}>{d.sub}</Text>
+                    <Text className="text-[15px] font-semibold text-text-primary">{d.label}</Text>
+                    <Text className="text-[11px] text-text-muted">{d.sub}</Text>
                   </View>
-                  <Text style={styles.drinkRowKcal}>{d.kcal} kcal</Text>
+                  <Text className="text-[13px] text-text-secondary">{d.kcal} kcal</Text>
                   <Ionicons name="add-circle-outline" size={22} color={Colors.accent} />
                 </TouchableOpacity>
               ))}
-              <View style={[styles.formRow, { alignItems: 'flex-end' }]}>
-                <View style={[styles.formInputWrapper, { flex: 1 }]}>
-                  <Text style={styles.formLabel}>Standard Drinks</Text>
+              <View className="flex-row gap-2 items-end">
+                <View className="gap-1 flex-1">
+                  <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+                    Standard Drinks
+                  </Text>
                   <TextInput
                     value={stdDrinks}
                     onChangeText={setStdDrinks}
@@ -722,20 +720,26 @@ export default function CaloriesScreen() {
                     placeholderTextColor={Colors.textMuted}
                     keyboardType="decimal-pad"
                     keyboardAppearance="dark"
-                    style={styles.formInput}
+                    className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
                   />
                 </View>
-                <TouchableOpacity style={[styles.logBtn, { flex: 1 }]} onPress={handleStdDrinks}>
-                  <Text style={styles.logBtnText}>Log ({Math.round((parseFloat(stdDrinks) || 0) * 70)} kcal)</Text>
+                <TouchableOpacity className="bg-accent rounded-xl py-3 items-center mt-2 flex-1" onPress={handleStdDrinks}>
+                  <Text className="text-[15px] font-bold text-text-primary">
+                    Log ({Math.round((parseFloat(stdDrinks) || 0) * 70)} kcal)
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <>
-              <Text style={styles.alcoholHint}>Calculate calories from volume and alcohol content</Text>
-              <View style={styles.formRow}>
-                <View style={[styles.formInputWrapper, { flex: 1 }]}>
-                  <Text style={styles.formLabel}>Volume (ml)</Text>
+              <Text className="text-[11px] text-text-muted text-center">
+                Calculate calories from volume and alcohol content
+              </Text>
+              <View className="flex-row gap-2">
+                <View className="gap-1 flex-1">
+                  <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+                    Volume (ml)
+                  </Text>
                   <TextInput
                     value={customVolMl}
                     onChangeText={setCustomVolMl}
@@ -743,11 +747,13 @@ export default function CaloriesScreen() {
                     placeholderTextColor={Colors.textMuted}
                     keyboardType="decimal-pad"
                     keyboardAppearance="dark"
-                    style={styles.formInput}
+                    className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
                   />
                 </View>
-                <View style={[styles.formInputWrapper, { flex: 1 }]}>
-                  <Text style={styles.formLabel}>ABV %</Text>
+                <View className="gap-1 flex-1">
+                  <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+                    ABV %
+                  </Text>
                   <TextInput
                     value={customAbv}
                     onChangeText={setCustomAbv}
@@ -755,17 +761,17 @@ export default function CaloriesScreen() {
                     placeholderTextColor={Colors.textMuted}
                     keyboardType="decimal-pad"
                     keyboardAppearance="dark"
-                    style={styles.formInput}
+                    className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
                   />
                 </View>
               </View>
               {customVolMl && customAbv && (
-                <Text style={styles.alcoholCalcPreview}>
+                <Text className="text-[24px] font-bold text-accent text-center py-2">
                   ≈ {alcoholKcalFromVolABV(parseFloat(customVolMl) || 0, parseFloat(customAbv) || 0)} kcal
                 </Text>
               )}
-              <TouchableOpacity style={styles.logBtn} onPress={handleCustomAlcohol}>
-                <Text style={styles.logBtnText}>Log Drink</Text>
+              <TouchableOpacity className="bg-accent rounded-xl py-3 items-center mt-2" onPress={handleCustomAlcohol}>
+                <Text className="text-[15px] font-bold text-text-primary">Log Drink</Text>
               </TouchableOpacity>
             </>
           )}
@@ -777,9 +783,9 @@ export default function CaloriesScreen() {
 
 function SummaryRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm }}>
-      <Text style={{ fontSize: Typography.sizes.sm, color: Colors.textSecondary }}>{label}</Text>
-      <Text style={{ fontSize: Typography.sizes.sm, fontWeight: '600', color: highlight ? Colors.success : Colors.textPrimary }}>
+    <View className="flex-row justify-between gap-2">
+      <Text className="text-[13px] text-text-secondary">{label}</Text>
+      <Text className={`text-[13px] font-semibold ${highlight ? 'text-success' : 'text-text-primary'}`}>
         {value}
       </Text>
     </View>
@@ -788,8 +794,10 @@ function SummaryRow({ label, value, highlight }: { label: string; value: string;
 
 function MacroInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <View style={[styles.formInputWrapper, { flex: 1 }]}>
-      <Text style={styles.formLabel}>{label}</Text>
+    <View className="gap-1 flex-1">
+      <Text className="text-[11px] text-text-muted font-semibold uppercase" style={{ letterSpacing: 0.5 }}>
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -798,336 +806,8 @@ function MacroInput({ label, value, onChange }: { label: string; value: string; 
         keyboardType="decimal-pad"
         keyboardAppearance="dark"
         textAlign="center"
-        style={styles.formInput}
+        className="bg-surface-elevated rounded-xl border border-border px-3 py-2 text-[15px] text-text-primary min-h-[44px]"
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, gap: Spacing.md },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  navBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateLabel: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  summaryCard: { gap: Spacing.base },
-  summaryTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.base,
-  },
-  ringCenter: { alignItems: 'center' },
-  ringValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  ringLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textSecondary,
-  },
-  summaryRight: {
-    flex: 1,
-    gap: Spacing.sm,
-  },
-  macros: { gap: Spacing.sm },
-  macroBar: {},
-  mealCard: { gap: Spacing.sm },
-  mealHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mealTitle: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  mealHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  mealCals: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-  },
-  barcodeBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  addMealBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.accentMuted,
-  },
-  addMealText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  emptyMeal: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  entryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  entryName: {
-    flex: 1,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-  },
-  entryMacros: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    marginTop: 1,
-  },
-  entryMicros: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    opacity: 0.7,
-    marginTop: 1,
-  },
-  microsToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  microsToggleText: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  entryCals: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  addForm: { gap: Spacing.md },
-  barcodeSheetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  barcodeSheetText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  formRow: { flexDirection: 'row', gap: Spacing.sm },
-  formInputWrapper: { gap: 4 },
-  formLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  formInput: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: Typography.sizes.base,
-    color: Colors.textPrimary,
-    minHeight: 44,
-  },
-  logBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  logBtnText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  // Alcohol tracker styles
-  quickDrinksRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  quickDrinkChip: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(78, 203, 113, 0.25)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    gap: 2,
-  },
-  quickDrinkLabel: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  quickDrinkSub: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  alcoholTabs: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.md,
-    padding: 3,
-    gap: 3,
-  },
-  alcoholTab: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    borderRadius: Radius.sm,
-  },
-  alcoholTabActive: {
-    backgroundColor: Colors.accent,
-  },
-  alcoholTabText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  alcoholTabTextActive: {
-    color: Colors.textPrimary,
-  },
-  alcoholHint: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  drinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  drinkRowLabel: {
-    fontSize: Typography.sizes.base,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  drinkRowSub: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.textMuted,
-  },
-  drinkRowKcal: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.textSecondary,
-  },
-  microsCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.tealMuted,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(0,217,192,0.25)',
-  },
-  microsCtaText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.teal,
-    flex: 1,
-    textAlign: 'center',
-  },
-  vitaminSectionLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.teal,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginTop: Spacing.xs,
-  },
-  alcoholCalcPreview: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: '700',
-    color: Colors.accent,
-    textAlign: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  // Fasting timer
-  fastingCard: { gap: Spacing.sm },
-  fastingHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fastingTitle: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary },
-  fastingElapsed: { fontSize: Typography.sizes.xxl, fontWeight: '800', color: Colors.teal },
-  fastingTarget: { fontSize: Typography.sizes.base, color: Colors.textMuted },
-  fastingHint: { fontSize: Typography.sizes.sm, color: Colors.textMuted },
-  fastingNoTarget: { fontSize: Typography.sizes.xs, color: Colors.textMuted, fontStyle: 'italic' },
-  fastingPresets: { flexDirection: 'row', gap: Spacing.xs },
-  fastingPresetChip: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  fastingPresetText: { fontSize: Typography.sizes.sm, fontWeight: '600', color: Colors.teal },
-  endFastBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.md,
-    backgroundColor: 'rgba(255,99,132,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,99,132,0.4)',
-  },
-  endFastText: { fontSize: Typography.sizes.sm, fontWeight: '700', color: Colors.coral },
-});

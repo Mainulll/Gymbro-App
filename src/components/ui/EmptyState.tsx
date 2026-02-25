@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors } from '../../constants/theme';
 import { Button } from './Button';
 
 interface EmptyStateProps {
@@ -22,41 +22,15 @@ export function EmptyState({
   style,
 }: EmptyStateProps) {
   return (
-    <View style={[styles.container, style]}>
+    <View className="flex-1 items-center justify-center px-8 gap-3" style={style}>
       <Ionicons name={icon} size={56} color={Colors.textMuted} />
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text className="text-[20px] font-semibold text-text-primary text-center">{title}</Text>
+      {subtitle && (
+        <Text className="text-[15px] text-text-secondary text-center leading-6">{subtitle}</Text>
+      )}
       {actionLabel && onAction && (
-        <Button
-          label={actionLabel}
-          onPress={onAction}
-          variant="primary"
-          style={styles.button}
-        />
+        <Button label={actionLabel} onPress={onAction} variant="primary" style={{ marginTop: 8 }} />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xxl,
-    gap: Spacing.md,
-  },
-  title: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: Typography.sizes.base,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: Typography.sizes.base * 1.5,
-  },
-  button: { marginTop: Spacing.sm },
-});

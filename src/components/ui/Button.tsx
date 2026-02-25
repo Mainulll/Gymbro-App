@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
-  ActivityIndicator,
-} from 'react-native';
-import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { TouchableOpacity, Text, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
+import { Colors } from '../../constants/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -23,6 +16,32 @@ interface ButtonProps {
   textStyle?: TextStyle;
   fullWidth?: boolean;
 }
+
+const VARIANT_CLASS: Record<ButtonVariant, string> = {
+  primary: 'bg-accent',
+  secondary: 'bg-surface-elevated border border-border',
+  ghost: 'bg-transparent',
+  danger: 'bg-danger/15 border border-danger',
+};
+
+const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: 'px-3 min-h-[32px]',
+  md: 'px-5 min-h-[44px]',
+  lg: 'px-6 min-h-[52px]',
+};
+
+const VARIANT_TEXT_CLASS: Record<ButtonVariant, string> = {
+  primary: 'text-text-primary',
+  secondary: 'text-text-secondary',
+  ghost: 'text-accent',
+  danger: 'text-danger',
+};
+
+const SIZE_TEXT_CLASS: Record<ButtonSize, string> = {
+  sm: 'text-[13px]',
+  md: 'text-[15px]',
+  lg: 'text-[17px]',
+};
 
 export function Button({
   label,
@@ -40,14 +59,16 @@ export function Button({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.75}
-      style={[
-        styles.base,
-        styles[variant],
-        styles[size],
-        fullWidth && styles.fullWidth,
-        (disabled || loading) && styles.disabled,
-        style,
-      ]}
+      className={[
+        'flex-row items-center justify-center rounded-xl',
+        VARIANT_CLASS[variant],
+        SIZE_CLASS[size],
+        fullWidth ? 'w-full' : '',
+        disabled || loading ? 'opacity-40' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
     >
       {loading ? (
         <ActivityIndicator
@@ -55,46 +76,17 @@ export function Button({
           size="small"
         />
       ) : (
-        <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`], textStyle]}>
+        <Text
+          className={[
+            'font-semibold tracking-[0.2px]',
+            VARIANT_TEXT_CLASS[variant],
+            SIZE_TEXT_CLASS[size],
+          ].join(' ')}
+          style={textStyle}
+        >
           {label}
         </Text>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.md,
-  },
-  fullWidth: { width: '100%' },
-  disabled: { opacity: 0.4 },
-
-  // Variants
-  primary: { backgroundColor: Colors.accent },
-  secondary: { backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
-  ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: Colors.dangerMuted, borderWidth: 1, borderColor: Colors.danger },
-
-  // Sizes
-  sm: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm - 2, minHeight: 32 },
-  md: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, minHeight: 44 },
-  lg: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.base, minHeight: 52 },
-
-  // Text base
-  text: { fontWeight: '600', letterSpacing: 0.2 },
-
-  // Text variants
-  primaryText: { color: Colors.textPrimary },
-  secondaryText: { color: Colors.textSecondary },
-  ghostText: { color: Colors.accent },
-  dangerText: { color: Colors.danger },
-
-  // Text sizes
-  smText: { fontSize: Typography.sizes.sm },
-  mdText: { fontSize: Typography.sizes.base },
-  lgText: { fontSize: Typography.sizes.md },
-});

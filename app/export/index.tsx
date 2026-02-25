@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   Platform,
@@ -16,7 +15,7 @@ import { getDatabase } from '../../src/db';
 import { generateAndShareCSV } from '../../src/utils/csv';
 import { Card } from '../../src/components/ui/Card';
 import { Divider } from '../../src/components/ui/Divider';
-import { Colors, Typography, Spacing, Radius } from '../../src/constants/theme';
+import { Colors } from '../../src/constants/theme';
 import { getWeekStart, getPreviousWeekStart, getWeekLabel } from '../../src/utils/date';
 
 type WeekRange = 'this' | 'last' | 'two_ago';
@@ -30,7 +29,11 @@ export default function ExportScreen() {
   const weekOptions: { key: WeekRange; label: string; weekStart: Date }[] = [
     { key: 'this', label: 'This Week', weekStart: getWeekStart() },
     { key: 'last', label: 'Last Week', weekStart: getPreviousWeekStart(getWeekStart()) },
-    { key: 'two_ago', label: '2 Weeks Ago', weekStart: getPreviousWeekStart(getPreviousWeekStart(getWeekStart())) },
+    {
+      key: 'two_ago',
+      label: '2 Weeks Ago',
+      weekStart: getPreviousWeekStart(getPreviousWeekStart(getWeekStart())),
+    },
   ];
 
   const selected = weekOptions.find((w) => w.key === selectedWeek)!;
@@ -40,7 +43,6 @@ export default function ExportScreen() {
       Alert.alert('Nothing to export', 'Please select at least one data type.');
       return;
     }
-
     setExporting(true);
     try {
       const db = await getDatabase();
@@ -57,24 +59,32 @@ export default function ExportScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
         {/* Week selector */}
-        <Text style={styles.sectionLabel}>Select Week</Text>
-        <Card style={styles.card}>
+        <Text className="text-[11px] font-bold text-text-muted uppercase tracking-[0.8px] pt-2 px-1">
+          Select Week
+        </Text>
+        <Card style={{ gap: 0, overflow: 'hidden' }}>
           {weekOptions.map((option, i) => (
             <React.Fragment key={option.key}>
               {i > 0 && <Divider />}
               <TouchableOpacity
-                style={styles.weekRow}
+                className="flex-row items-center justify-between gap-3 px-1 py-3"
                 onPress={() => setSelectedWeek(option.key)}
               >
-                <View style={styles.weekInfo}>
-                  <Text style={styles.weekLabel}>{option.label}</Text>
-                  <Text style={styles.weekRange}>{getWeekLabel(option.weekStart)}</Text>
+                <View className="gap-0.5">
+                  <Text className="text-[15px] font-semibold text-text-primary">{option.label}</Text>
+                  <Text className="text-[13px] text-text-secondary">{getWeekLabel(option.weekStart)}</Text>
                 </View>
-                <View style={[styles.radio, selectedWeek === option.key && styles.radioActive]}>
-                  {selectedWeek === option.key && <View style={styles.radioDot} />}
+                <View
+                  className={`w-[22px] h-[22px] rounded-full border-2 items-center justify-center ${
+                    selectedWeek === option.key ? 'border-accent' : 'border-border'
+                  }`}
+                >
+                  {selectedWeek === option.key && (
+                    <View className="w-2.5 h-2.5 rounded-full bg-accent" />
+                  )}
                 </View>
               </TouchableOpacity>
             </React.Fragment>
@@ -82,12 +92,16 @@ export default function ExportScreen() {
         </Card>
 
         {/* Data to include */}
-        <Text style={styles.sectionLabel}>Include</Text>
-        <Card style={styles.card}>
-          <View style={styles.toggleRow}>
+        <Text className="text-[11px] font-bold text-text-muted uppercase tracking-[0.8px] pt-2 px-1">
+          Include
+        </Text>
+        <Card style={{ gap: 0, overflow: 'hidden' }}>
+          <View className="flex-row items-center justify-between px-1 py-2">
             <View>
-              <Text style={styles.toggleLabel}>Workout Data</Text>
-              <Text style={styles.toggleSub}>Exercise, sets, reps, weight</Text>
+              <Text className="text-[15px] font-semibold text-text-primary">Workout Data</Text>
+              <Text className="text-[13px] text-text-secondary mt-0.5">
+                Exercise, sets, reps, weight
+              </Text>
             </View>
             <Switch
               value={includeWorkouts}
@@ -97,10 +111,12 @@ export default function ExportScreen() {
             />
           </View>
           <Divider />
-          <View style={styles.toggleRow}>
+          <View className="flex-row items-center justify-between px-1 py-2">
             <View>
-              <Text style={styles.toggleLabel}>Calorie Data</Text>
-              <Text style={styles.toggleSub}>Meals, macros, daily totals</Text>
+              <Text className="text-[15px] font-semibold text-text-primary">Calorie Data</Text>
+              <Text className="text-[13px] text-text-secondary mt-0.5">
+                Meals, macros, daily totals
+              </Text>
             </View>
             <Switch
               value={includeCalories}
@@ -112,23 +128,31 @@ export default function ExportScreen() {
         </Card>
 
         {/* Format info */}
-        <Card style={styles.formatCard} elevated>
-          <View style={styles.formatHeader}>
+        <Card elevated style={{ gap: 8 }}>
+          <View className="flex-row items-center gap-1">
             <Ionicons name="information-circle-outline" size={18} color={Colors.accentLight} />
-            <Text style={styles.formatTitle}>CSV Format</Text>
+            <Text className="text-[13px] font-bold text-accent-light">CSV Format</Text>
           </View>
-          <Text style={styles.formatDesc}>
+          <Text className="text-[13px] text-text-secondary leading-5">
             Exports as comma-separated values (.csv) compatible with Excel and Google Sheets.
             Workout data has one row per set for easy pivot table analysis.
           </Text>
-          <Text style={styles.formatExample}>
+          <Text
+            className="text-[11px] text-text-muted bg-background p-2 rounded-lg"
+            style={{
+              fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+              lineHeight: 18,
+            }}
+          >
             {`Date, Day, Workout Name, Exercise, Set, Weight (kg), Reps\n2026-02-23, Monday, Push Day, Bench Press, 1, 100, 8`}
           </Text>
         </Card>
 
         {/* Export button */}
         <TouchableOpacity
-          style={[styles.exportBtn, exporting && styles.exportBtnDisabled]}
+          className={`flex-row items-center justify-center gap-2 bg-accent rounded-xl py-4 mt-2${
+            exporting ? ' opacity-60' : ''
+          }`}
           onPress={handleExport}
           disabled={exporting}
         >
@@ -137,85 +161,13 @@ export default function ExportScreen() {
           ) : (
             <>
               <Ionicons name="share-outline" size={20} color="white" />
-              <Text style={styles.exportBtnText}>Export & Share</Text>
+              <Text className="text-[15px] font-bold text-text-primary">Export & Share</Text>
             </>
           )}
         </TouchableOpacity>
 
-        <View style={{ height: Spacing.lg }} />
+        <View className="h-5" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surface },
-  content: { padding: Spacing.base, gap: Spacing.md },
-  sectionLabel: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-  },
-  card: { gap: 0, overflow: 'hidden' },
-  weekRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xs,
-    gap: Spacing.md,
-  },
-  weekInfo: { gap: 2 },
-  weekLabel: { fontSize: Typography.sizes.base, fontWeight: '600', color: Colors.textPrimary },
-  weekRange: { fontSize: Typography.sizes.sm, color: Colors.textSecondary },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioActive: { borderColor: Colors.accent },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.accent },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-  },
-  toggleLabel: { fontSize: Typography.sizes.base, fontWeight: '600', color: Colors.textPrimary },
-  toggleSub: { fontSize: Typography.sizes.sm, color: Colors.textSecondary, marginTop: 2 },
-  formatCard: { gap: Spacing.sm },
-  formatHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  formatTitle: { fontSize: Typography.sizes.sm, fontWeight: '700', color: Colors.accentLight },
-  formatDesc: { fontSize: Typography.sizes.sm, color: Colors.textSecondary, lineHeight: 20 },
-  formatExample: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    backgroundColor: Colors.background,
-    padding: Spacing.sm,
-    borderRadius: Radius.sm,
-    lineHeight: 18,
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.base,
-    marginTop: Spacing.sm,
-  },
-  exportBtnDisabled: { opacity: 0.6 },
-  exportBtnText: { fontSize: Typography.sizes.base, fontWeight: '700', color: Colors.textPrimary },
-});
-
