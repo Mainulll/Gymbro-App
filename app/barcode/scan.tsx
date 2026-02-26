@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-na
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   useBarcodeProduct,
@@ -18,6 +19,7 @@ type BarcodeResult = { type: string; data: string };
 export default function BarcodeScanScreen() {
   const { meal } = useLocalSearchParams<{ meal?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
+  const insets = useSafeAreaInsets();
 
   const [scanning, setScanning] = useState(true);
   // Scanned barcode drives the TanStack query; null = camera idle
@@ -147,7 +149,7 @@ export default function BarcodeScanScreen() {
       {/* Top bar */}
       <View
         className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4 pb-3"
-        style={{ paddingTop: 60, backgroundColor: 'rgba(0,0,0,0.5)' }}
+        style={{ paddingTop: insets.top, backgroundColor: 'rgba(0,0,0,0.5)' }}
       >
         <TouchableOpacity
           className="w-11 h-11 items-center justify-center"

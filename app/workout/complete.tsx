@@ -135,6 +135,7 @@ export default function WorkoutCompleteScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: 'Workout Complete',
           headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.background },

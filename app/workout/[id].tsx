@@ -113,6 +113,7 @@ export default function WorkoutDetailScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: session.name || 'Workout',
           headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.background },

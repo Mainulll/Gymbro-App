@@ -157,7 +157,7 @@ export default function HealthScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Health & Body' }} />
+      <Stack.Screen options={{ headerShown: true, title: 'Health & Body' }} />
       <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Segment control */}
         <View className="flex-row m-4 bg-surface-elevated rounded-xl p-0.5 border border-border">

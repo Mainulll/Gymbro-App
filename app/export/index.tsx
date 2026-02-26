@@ -59,7 +59,7 @@ export default function ExportScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface" edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
         {/* Week selector */}
         <Text className="text-[11px] font-bold text-text-muted uppercase tracking-[0.8px] pt-2 px-1">

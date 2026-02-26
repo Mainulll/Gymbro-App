@@ -7,6 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions, CameraType } from 'expo-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,7 @@ export default function RecordScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const addVideoToExercise = useWorkoutStore((s) => s.addVideoToExercise);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     return () => {
@@ -152,7 +154,7 @@ export default function RecordScreen() {
       {/* Top bar */}
       <View
         className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4 pb-3"
-        style={{ paddingTop: 60, backgroundColor: 'rgba(0,0,0,0.4)' }}
+        style={{ paddingTop: insets.top, backgroundColor: 'rgba(0,0,0,0.4)' }}
       >
         <TouchableOpacity
           className="w-11 h-11 items-center justify-center"

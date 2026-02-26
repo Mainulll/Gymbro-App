@@ -48,6 +48,7 @@ export default function MicrosScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: 'Daily Micronutrients',
           headerStyle: { backgroundColor: Colors.background },
           headerTintColor: Colors.textPrimary,

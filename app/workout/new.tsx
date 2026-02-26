@@ -28,7 +28,7 @@ export default function NewWorkoutScreen() {
 
   if (activeWorkout) {
     return (
-      <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface" edges={['top', 'bottom']}>
         <View className="flex-1 p-4 gap-3">
           <View className="items-center gap-2 pt-6">
             <Ionicons name="barbell" size={40} color={Colors.accent} />
@@ -47,7 +47,7 @@ export default function NewWorkoutScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface" edges={['top', 'bottom']}>
       <View className="flex-1 p-4 gap-3">
         {/* Name input */}
         <Text className="text-[13px] font-semibold text-text-secondary uppercase tracking-[0.8px] mt-2">

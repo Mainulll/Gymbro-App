@@ -73,6 +73,7 @@ export default function FoodSearchScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: 'Search Food',
           presentation: 'modal',
           headerStyle: { backgroundColor: Colors.surface },

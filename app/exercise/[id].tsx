@@ -136,7 +136,7 @@ export default function ExerciseDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: template.name }} />
+      <Stack.Screen options={{ headerShown: true, title: template.name }} />
       <SafeAreaView className="flex-1 bg-background" edges={['bottom']}>
         {/* Info card */}
         <View

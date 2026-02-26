@@ -122,6 +122,7 @@ export default function AddCaloriesScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: `Add to ${MEAL_LABELS[mealType]}`,
           headerStyle: { backgroundColor: Colors.surface },
           headerTintColor: Colors.textPrimary,

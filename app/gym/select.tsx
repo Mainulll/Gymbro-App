@@ -186,6 +186,7 @@ export default function GymSelectScreen() {
     <>
       <Stack.Screen
         options={{
+          headerShown: true,
           title: isCheckInMode ? 'Check In to a Gym' : 'Set Home Gym',
           presentation: 'modal',
           headerBackTitle: '',
