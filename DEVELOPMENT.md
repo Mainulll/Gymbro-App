@@ -5,7 +5,7 @@
 
 ---
 
-## Quick start
+## Quick start - ALWAYS PUSH TO GIT AUTOMATICALLY AFTER EVERY CHANGE.
 
 ```bash
 cp .env.example .env          # fill in Supabase keys
@@ -38,7 +38,7 @@ gymbro/
 │   │   └── profile.tsx      # User profile & settings
 │   ├── workout/             # new · [id] · complete
 │   ├── exercise/            # select · [id] (detail + chart)
-│   ├── calories/            # micros breakdown
+│   ├── calories/            # add (food entry form) · micros breakdown
 │   ├── food/                # search · select
 │   ├── gym/                 # select (OSM + custom gyms)
 │   ├── health/              # weight · sleep · photos
@@ -73,7 +73,7 @@ gymbro/
 │   │
 │   ├── utils/
 │   │   ├── openFoodFacts.ts  # lookupBarcode · barcodeQueryKey · useBarcodeProduct · prefetchBarcodeProduct · scaleNutrition · hasVitaminData
-│   │   ├── caloriePrefill.ts # setPendingCaloriePrefill / getPendingCaloriePrefill
+│   │   ├── caloriePrefill.ts # setPendingCaloriePrefill / consumePendingCaloriePrefill
 │   │   ├── csv.ts            # generateAndShareCSV
 │   │   ├── date.ts           # formatDateISO · getWeekStart · getWeekLabel etc.
 │   │   ├── gymCommunity.ts   # Firebase check-in helpers
@@ -223,6 +223,25 @@ Firebase config (`src/config/firebase.ts`) uses **placeholder values**. The gym 
 | Concurrent lookup | `scanLockRef` boolean, reset by `safeExit` and `resumeScanningWithDelay` |
 | "Scan Again" bounce | 800ms delay via `setTimeout(() => setScanning(true), delayMs)` |
 | Not found alert fires once | `alertedRef` tracks last alerted barcode |
+
+---
+
+## Calories tab architecture
+
+Food entry uses a **full-screen push navigation** pattern (no BottomSheet/Modal):
+
+| Action | Implementation |
+|---|---|
+| "Add" button on meal card | `router.push('/calories/add', { meal, date })` |
+| Scan Barcode (from meal card) | `router.push('/barcode/scan', { meal })` → re-staged prefill auto-navigates to add screen |
+| Search Food (from meal card) | `router.push('/food/search', { meal })` → re-staged prefill auto-navigates to add screen |
+| Scan Barcode (from add screen) | `router.push('/barcode/scan', { meal })` → `useFocusEffect` in add screen consumes prefill |
+| Search Food (from add screen) | `router.push('/food/search', { meal })` → `useFocusEffect` in add screen consumes prefill |
+| Log entry | `addEntry()` + `router.back()` |
+
+**Why no BottomSheet:** iOS `UIVisualEffectView` (BlurView) must never be inside a container with `alpha < 1`. The opacity animation in `Modal`-backed BottomSheet triggered a main-thread hang on iOS, freezing the app on button press.
+
+**Prefill flow:** `caloriePrefill.ts` is a module-level singleton. Barcode/search screens call `setPendingCaloriePrefill()` then `router.back()`. The receiving screen's `useFocusEffect` calls `consumePendingCaloriePrefill()` and populates form fields.
 
 ---
 
