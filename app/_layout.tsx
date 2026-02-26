@@ -71,10 +71,10 @@ export default function RootLayout() {
           <Stack.Screen name="workout/complete" />
           <Stack.Screen name="exercise/select" />
           <Stack.Screen name="exercise/[id]" />
+          <Stack.Screen name="calories/add" />
           <Stack.Screen name="calories/micros" />
           <Stack.Screen name="food/search" />
-          <Stack.Screen name="food/select" />
-          <Stack.Screen name="gym/index" />
+          <Stack.Screen name="gym/select" />
           <Stack.Screen name="health/index" />
           <Stack.Screen name="barcode/scan" />
           <Stack.Screen name="camera/record" />
